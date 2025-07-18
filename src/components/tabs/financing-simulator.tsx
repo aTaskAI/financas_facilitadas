@@ -1,5 +1,5 @@
 'use client';
-import { useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { useFinancialData } from '@/contexts/financial-data-context';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -163,15 +163,15 @@ export function FinancingSimulator() {
               </TableHeader>
               <TableBody>
                 {visibleRows.map((row, index) => (
-                  <>
+                  <React.Fragment key={row.parcela}>
                    {index === 24 && tempoComAmort > 27 && (
-                     <TableRow><TableCell colSpan={8} className="text-center">...</TableCell></TableRow>
+                     <TableRow key="separator"><TableCell colSpan={8} className="text-center">...</TableCell></TableRow>
                    )}
-                  <TableRow key={row.parcela} className={row.parcela <= tempoComAmort && (amortizacao || 0) > 0 ? "bg-amber-50" : ""}>
+                  <TableRow className={row.parcela <= tempoComAmort && (amortizacao || 0) > 0 ? "bg-amber-50" : ""}>
                     <TableCell><Checkbox checked={parcelasPagas[row.parcela]} onCheckedChange={(checked) => handleCheckboxChange(row.parcela, !!checked)} /></TableCell>
                     <TableCell>{row.parcela}</TableCell><TableCell>{formatCurrency(row.saldoDevedor)}</TableCell><TableCell>{formatCurrency(row.amortizacao)}</TableCell><TableCell>{formatCurrency(row.juros)}</TableCell><TableCell>{formatCurrency(row.prestacao)}</TableCell><TableCell>{formatCurrency(row.parteA)}</TableCell><TableCell>{formatCurrency(row.parteB)}</TableCell>
                   </TableRow>
-                  </>
+                  </React.Fragment>
                 ))}
               </TableBody>
             </Table>
