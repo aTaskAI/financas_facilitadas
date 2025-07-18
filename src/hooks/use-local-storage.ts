@@ -1,0 +1,60 @@
+'use client';
+
+import { useState, useEffect, useCallback, Dispatch, SetStateAction } from 'react';
+
+export function useLocalStorage<T>(key: string, initialValue: T): [T, Dispatch<SetStateAction<T>>] {
+    const [storedValue, setStoredValue] = useState<T>(initialValue);
+
+    const readValue = useCallback((): T => {
+        if (typeof window === 'undefined') {
+            return initialValue;
+        }
+        try {
+            const item = window.localStorage.getItem(key);
+            return item ? (JSON.parse(item) as T) : initialValue;
+        } catch (error) {
+            console.warn(`Error reading localStorage key “${key}”:`, error);
+            return initialValue;
+        }
+    }, [initialValue, key]);
+
+    useEffect(() => {
+        setStoredValue(readValue());
+    }, [key, readValue]);
+
+
+    const setValue: Dispatch<SetStateAction<T>> = (value) => {
+        try {
+            const valueToStore = value instanceof Function ? value(storedValue) : value;
+            setStoredValue(valueToStore);
+            if (typeof window !== 'undefined') {
+                window.localStorage.setItem(key, JSON.stringify(valueToStore));
+                window.dispatchEvent(new Event('local-storage'));
+            }
+        } catch (error) {
+            console.warn(`Error setting localStorage key “${key}”:`, error);
+        }
+    };
+
+    useEffect(() => {
+        const handleStorageChange = (e: StorageEvent) => {
+            if (e.key === key) {
+                setStoredValue(readValue());
+            }
+        };
+
+        const handleLocalStorageChange = () => {
+             setStoredValue(readValue());
+        }
+
+        window.addEventListener('storage', handleStorageChange);
+        window.addEventListener('local-storage', handleLocalStorageChange);
+
+        return () => {
+            window.removeEventListener('storage', handleStorageChange);
+            window.removeEventListener('local-storage', handleLocalStorageChange);
+        };
+    }, [key, readValue]);
+
+    return [storedValue, setValue];
+}
