@@ -3,9 +3,7 @@
 import { useState, useEffect, useCallback, Dispatch, SetStateAction } from 'react';
 
 export function useLocalStorage<T>(key: string, initialValue: T): [T, Dispatch<SetStateAction<T>>] {
-    const [storedValue, setStoredValue] = useState<T>(initialValue);
-
-    const readValue = useCallback((): T => {
+    const [storedValue, setStoredValue] = useState<T>(() => {
         if (typeof window === 'undefined') {
             return initialValue;
         }
@@ -16,12 +14,7 @@ export function useLocalStorage<T>(key: string, initialValue: T): [T, Dispatch<S
             console.warn(`Error reading localStorage key “${key}”:`, error);
             return initialValue;
         }
-    }, [initialValue, key]);
-
-    useEffect(() => {
-        setStoredValue(readValue());
-    }, [key, readValue]);
-
+    });
 
     const setValue: Dispatch<SetStateAction<T>> = (value) => {
         try {
@@ -39,12 +32,22 @@ export function useLocalStorage<T>(key: string, initialValue: T): [T, Dispatch<S
     useEffect(() => {
         const handleStorageChange = (e: StorageEvent) => {
             if (e.key === key) {
-                setStoredValue(readValue());
+                try {
+                    const item = window.localStorage.getItem(key);
+                    setStoredValue(item ? JSON.parse(item) : initialValue);
+                } catch (error) {
+                     console.warn(`Error reading localStorage key “${key}”:`, error);
+                }
             }
         };
 
         const handleLocalStorageChange = () => {
-             setStoredValue(readValue());
+             try {
+                const item = window.localStorage.getItem(key);
+                setStoredValue(item ? JSON.parse(item) : initialValue);
+            } catch (error) {
+                 console.warn(`Error reading localStorage key “${key}”:`, error);
+            }
         }
 
         window.addEventListener('storage', handleStorageChange);
@@ -54,7 +57,7 @@ export function useLocalStorage<T>(key: string, initialValue: T): [T, Dispatch<S
             window.removeEventListener('storage', handleStorageChange);
             window.removeEventListener('local-storage', handleLocalStorageChange);
         };
-    }, [key, readValue]);
+    }, [key, initialValue]);
 
     return [storedValue, setValue];
 }
