@@ -2,7 +2,7 @@
 
 import { useAuth } from '@/contexts/auth-context';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { FinancialDataProvider } from '@/contexts/financial-data-context';
 import { FinancingSimulator } from '@/components/tabs/financing-simulator';
 import { ExpenseTracker } from '@/components/tabs/expense-tracker';
@@ -37,12 +37,26 @@ export default function Home() {
   const { user, loading } = useAuth();
   const router = useRouter();
   const isMobile = useIsMobile();
+  const [activeTab, setActiveTab] = useState('dashboard');
   
   useEffect(() => {
     if (!loading && !user) {
       router.push('/login');
     }
   }, [user, loading, router]);
+  
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.replace('#', '');
+      const validTab = navItems.some(item => item.value === hash);
+      setActiveTab(validTab ? hash : 'dashboard');
+    };
+    
+    window.addEventListener('hashchange', handleHashChange);
+    handleHashChange(); // Set initial tab
+
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
 
   if (loading || !user) {
     return (
@@ -57,16 +71,21 @@ export default function Home() {
       <SidebarProvider>
         <Sidebar>
           <SidebarContent>
+            <SidebarHeader>
+              <div className="flex items-center gap-2 px-2">
+                 <PiggyBank className="h-8 w-8 text-primary" />
+                  <h1 className="text-xl font-bold font-headline text-primary">
+                    Prospera
+                  </h1>
+              </div>
+            </SidebarHeader>
             <SidebarMenu>
               {navItems.map((item) => (
                 <SidebarMenuItem key={item.value}>
                    <SidebarMenuButton
                       href={`#${item.value}`}
-                      isActive={
-                        typeof window !== 'undefined'
-                          ? window.location.hash === `#${item.value}` || (window.location.hash === '' && item.value === 'dashboard')
-                          : item.value === 'dashboard'
-                      }
+                      isActive={activeTab === item.value}
+                      onClick={() => isMobile && (document.querySelector('[data-radix-collection-item] button[data-state="open"]')?.click())}
                     >
                       <item.icon />
                       <span>{item.label}</span>
@@ -83,10 +102,12 @@ export default function Home() {
                  <div className="md:hidden">
                     <SidebarTrigger />
                  </div>
-                <PiggyBank className="h-10 w-10 text-primary" />
-                <h1 className="text-xl sm:text-3xl font-bold font-headline text-primary">
-                  Prospera
-                </h1>
+                <div className="hidden md:flex items-center gap-3">
+                   <PiggyBank className="h-10 w-10 text-primary" />
+                    <h1 className="text-xl sm:text-3xl font-bold font-headline text-primary">
+                      Prospera
+                    </h1>
+                </div>
               </div>
               <div className="flex items-center gap-2">
                 {!isMobile && <FinancialAdviceModal />}
@@ -95,60 +116,12 @@ export default function Home() {
             </header>
             
             <main>
-              {/* This is a simple router based on URL hash */}
-              <div id="dashboard"><DashboardTab /></div>
-              <div id="simulator"><FinancingSimulator /></div>
-              <div id="expenses"><ExpenseTracker /></div>
-              <div id="couple"><CouplesFinance /></div>
-              <div id="loans"><LoansTracker /></div>
+              <div style={{ display: activeTab === 'dashboard' ? 'block' : 'none' }}><DashboardTab /></div>
+              <div style={{ display: activeTab === 'simulator' ? 'block' : 'none' }}><FinancingSimulator /></div>
+              <div style={{ display: activeTab === 'expenses' ? 'block' : 'none' }}><ExpenseTracker /></div>
+              <div style={{ display: activeTab === 'couple' ? 'block' : 'none' }}><CouplesFinance /></div>
+              <div style={{ display: activeTab === 'loans' ? 'block' : 'none' }}><LoansTracker /></div>
             </main>
-
-            <style jsx>{`
-              main > div {
-                display: none;
-              }
-              main > div:target {
-                display: block;
-              }
-              /* Show dashboard by default if no hash is present */
-              main > div:not(:target) ~ div[id="dashboard"] {
-                 display: block;
-              }
-              main > div:target ~ div[id="dashboard"] {
-                 display: none;
-              }
-             
-            `}</style>
-             <script
-              dangerouslySetInnerHTML={{
-                __html: `
-                  function handleHashChange() {
-                    const hash = window.location.hash.substring(1);
-                    const sections = document.querySelectorAll('main > div');
-                    let sectionToShow = 'dashboard';
-                    if (hash && document.getElementById(hash)) {
-                      sectionToShow = hash;
-                    }
-                    
-                    sections.forEach(section => {
-                      if (section.id === sectionToShow) {
-                        section.style.display = 'block';
-                      } else {
-                        section.style.display = 'none';
-                      }
-                    });
-                  }
-                  window.addEventListener('hashchange', handleHashChange, false);
-                  
-                  // Initial load
-                  document.addEventListener('DOMContentLoaded', handleHashChange);
-                  
-                  // Fallback for initial load if DOMContentLoaded is tricky
-                  handleHashChange();
-              `,
-              }}
-            />
-
           </div>
         </SidebarInset>
        {isMobile && (
