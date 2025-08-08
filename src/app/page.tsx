@@ -8,7 +8,7 @@ import { FinancingSimulator } from '@/components/tabs/financing-simulator';
 import { ExpenseTracker } from '@/components/tabs/expense-tracker';
 import { CouplesFinance } from '@/components/tabs/couples-finance';
 import { LoansTracker } from '@/components/tabs/loans-tracker';
-import { Landmark, Users, HandCoins, PiggyBank, LayoutDashboard } from 'lucide-react';
+import { Landmark, Users, HandCoins, PiggyBank, LayoutDashboard, Menu } from 'lucide-react';
 import { FinancialAdviceModal } from '@/components/ai/financial-advice-modal';
 import { DashboardTab } from '@/components/tabs/dashboard-tab';
 import { UserNav } from '@/components/user-nav';
@@ -24,6 +24,7 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from '@/components/ui/sidebar';
+import { Button } from '@/components/ui/button';
 
 const navItems = [
   { value: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -99,10 +100,12 @@ export default function Home() {
            <div className="container mx-auto p-4 sm:p-8">
             <header className="flex justify-between items-center mb-6">
               <div className="flex items-center gap-3">
-                 <div className="md:hidden">
-                    <SidebarTrigger />
-                 </div>
-                <div className="hidden md:flex items-center gap-3">
+                 <SidebarTrigger asChild>
+                    <Button variant="ghost" size="icon">
+                        <Menu />
+                    </Button>
+                 </SidebarTrigger>
+                <div className="flex items-center gap-3">
                    <PiggyBank className="h-10 w-10 text-primary" />
                     <h1 className="text-xl sm:text-3xl font-bold font-headline text-primary">
                       Prospera
