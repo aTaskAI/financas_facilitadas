@@ -13,15 +13,20 @@ import {
   GoogleAuthProvider,
   signOut,
   User,
+  updateProfile,
+  updatePassword,
+  reauthenticateWithPopup,
 } from 'firebase/auth';
+import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { auth, isFirebaseConfigured } from '@/lib/firebase';
-import { useRouter } from 'next/navigation';
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
   signInWithGoogle: () => void;
   logout: () => void;
+  updateUserProfile?: (displayName: string, photo?: File | null) => Promise<void>;
+  updateUserPassword?: (newPassword: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -59,7 +64,6 @@ const mockUser: User = {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const router = useRouter();
 
   useEffect(() => {
     if (!isFirebaseConfigured) {
@@ -73,20 +77,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       setLoading(false);
-      if (currentUser) {
-        router.push('/');
-      } else {
-        router.push('/login');
-      }
     });
 
     return () => unsubscribe();
-  }, [router]);
+  }, []);
 
   const signInWithGoogle = async () => {
     if (!isFirebaseConfigured) {
       setUser(mockUser);
-      router.push('/');
       return;
     }
     
@@ -94,7 +92,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const provider = new GoogleAuthProvider();
       await signInWithPopup(auth, provider);
-      // onAuthStateChanged will handle the redirect
+      // onAuthStateChanged will handle the user state
     } catch (error) {
       console.error('Error during sign in:', error);
       setLoading(false);
@@ -104,23 +102,69 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = async () => {
      if (!isFirebaseConfigured) {
       setUser(null);
-      router.push('/login');
       return;
     }
 
     try {
       await signOut(auth);
-      // onAuthStateChanged will handle the redirect
+      // onAuthStateChanged will handle the user state
     } catch (error) {
       console.error('Error during sign out:', error);
     }
   };
+
+  const updateUserProfile = async (displayName: string, photo?: File | null) => {
+    if (!auth.currentUser) throw new Error("Usuário não autenticado.");
+    if (!isFirebaseConfigured) {
+        const updatedUser = {...mockUser, displayName: displayName};
+        if(photo) {
+            updatedUser.photoURL = URL.createObjectURL(photo)
+        }
+        setUser(updatedUser);
+        return;
+    }
+
+    let photoURL = auth.currentUser.photoURL;
+    if (photo) {
+      const storage = getStorage();
+      const storageRef = ref(storage, `profile-pictures/${auth.currentUser.uid}`);
+      await uploadBytes(storageRef, photo);
+      photoURL = await getDownloadURL(storageRef);
+    }
+
+    await updateProfile(auth.currentUser, { displayName, photoURL });
+    setUser(auth.currentUser); // Force state update
+  };
+  
+  const updateUserPassword = async (newPassword: string) => {
+      if (!auth.currentUser) throw new Error("Usuário não autenticado.");
+      if (!isFirebaseConfigured) {
+          console.log("Mock password update.");
+          return;
+      }
+      try {
+        await updatePassword(auth.currentUser, newPassword);
+      } catch (error: any) {
+        if (error.code === 'auth/requires-recent-login') {
+            // Re-authenticate the user
+            const provider = new GoogleAuthProvider();
+            await reauthenticateWithPopup(auth.currentUser, provider);
+            // Retry updating the password
+            await updatePassword(auth.currentUser, newPassword);
+        } else {
+           throw error;
+        }
+      }
+  };
+
 
   const value = {
     user,
     loading,
     signInWithGoogle,
     logout,
+    updateUserProfile: isFirebaseConfigured ? updateUserProfile : undefined,
+    updateUserPassword: isFirebaseConfigured ? updateUserPassword : undefined,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -9,10 +9,10 @@ import { FinancingSimulator } from '@/components/tabs/financing-simulator';
 import { ExpenseTracker } from '@/components/tabs/expense-tracker';
 import { CouplesFinance } from '@/components/tabs/couples-finance';
 import { LoansTracker } from '@/components/tabs/loans-tracker';
-import { Landmark, Users, HandCoins, PiggyBank, LogOut, LayoutDashboard } from 'lucide-react';
+import { Landmark, Users, HandCoins, PiggyBank, LayoutDashboard } from 'lucide-react';
 import { FinancialAdviceModal } from '@/components/ai/financial-advice-modal';
-import { Button } from '@/components/ui/button';
 import { DashboardTab } from '@/components/tabs/dashboard-tab';
+import { UserNav } from '@/components/user-nav';
 
 export default function Home() {
   const { user, loading, logout } = useAuth();
@@ -44,9 +44,7 @@ export default function Home() {
           </div>
           <div className="flex items-center gap-2">
             <FinancialAdviceModal />
-            <Button variant="outline" size="icon" onClick={logout}>
-              <LogOut className="h-4 w-4" />
-            </Button>
+            <UserNav />
           </div>
         </header>
 
