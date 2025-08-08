@@ -16,6 +16,8 @@ import {
   updateProfile,
   updatePassword,
   reauthenticateWithPopup,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
 } from 'firebase/auth';
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { auth, isFirebaseConfigured } from '@/lib/firebase';
@@ -24,6 +26,8 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   signInWithGoogle: () => void;
+  signInWithEmailPassword?: (email: string, password: string) => Promise<void>;
+  signUpWithEmailPassword?: (email: string, password: string, displayName: string) => Promise<void>;
   logout: () => void;
   updateUserProfile?: (displayName: string, photo?: File | null) => Promise<void>;
   updateUserPassword?: (newPassword: string) => Promise<void>;
@@ -37,8 +41,7 @@ const mockUser: User = {
   email: 'mock.user@example.com',
   displayName: 'Mock User',
   photoURL: 'https://placehold.co/100x100.png',
-  // Add other required User properties with mock data
-  providerId: 'google.com',
+  providerId: 'password',
   emailVerified: true,
   isAnonymous: false,
   metadata: {},
@@ -67,7 +70,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!isFirebaseConfigured) {
-      // Use mock auth if Firebase is not set up
       console.log("Using mock user for development.");
       setUser(mockUser);
       setLoading(false);
@@ -92,12 +94,50 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const provider = new GoogleAuthProvider();
       await signInWithPopup(auth, provider);
-      // onAuthStateChanged will handle the user state
     } catch (error) {
       console.error('Error during sign in:', error);
       setLoading(false);
     }
   };
+
+  const signInWithEmailPassword = async (email: string, password: string) => {
+    if (!isFirebaseConfigured) {
+      setUser(mockUser);
+      return;
+    }
+    setLoading(true);
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+    } catch (error: any) {
+        setLoading(false);
+        if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+            throw new Error('E-mail ou senha inválidos.');
+        }
+        throw new Error('Ocorreu um erro desconhecido.');
+    }
+  };
+
+  const signUpWithEmailPassword = async (email: string, password: string, displayName: string) => {
+    if (!isFirebaseConfigured) {
+        setUser({...mockUser, displayName, email});
+        return;
+    }
+    setLoading(true);
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      await updateProfile(userCredential.user, { displayName });
+      // Reload user to get the new displayName
+      await userCredential.user.reload();
+      setUser(auth.currentUser);
+    } catch (error: any) {
+        setLoading(false);
+        if (error.code === 'auth/email-already-in-use') {
+            throw new Error('Este e-mail já está em uso.');
+        }
+        throw new Error('Ocorreu um erro ao criar a conta.');
+    }
+  };
+
 
   const logout = async () => {
      if (!isFirebaseConfigured) {
@@ -107,14 +147,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     try {
       await signOut(auth);
-      // onAuthStateChanged will handle the user state
     } catch (error) {
       console.error('Error during sign out:', error);
     }
   };
 
   const updateUserProfile = async (displayName: string, photo?: File | null) => {
-    if (!auth.currentUser) throw new Error("Usuário não autenticado.");
+    const currentUser = auth.currentUser;
+    if (!currentUser) throw new Error("Usuário não autenticado.");
     if (!isFirebaseConfigured) {
         const updatedUser = {...user, displayName: displayName} as User;
         if(photo) {
@@ -124,41 +164,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
     }
 
-    let photoURL = auth.currentUser.photoURL;
+    let photoURL = currentUser.photoURL;
     if (photo) {
       const storage = getStorage();
-      const storageRef = ref(storage, `profile-pictures/${auth.currentUser.uid}`);
+      const storageRef = ref(storage, `profile-pictures/${currentUser.uid}`);
       await uploadBytes(storageRef, photo);
       photoURL = await getDownloadURL(storageRef);
     }
 
-    await updateProfile(auth.currentUser, { displayName, photoURL });
+    await updateProfile(currentUser, { displayName, photoURL });
     
-    // Create a new user object to force re-render
-    const updatedUser = {
-      ...auth.currentUser,
-      displayName,
-      photoURL
-    } as User;
-
+    const updatedUser = Object.assign(Object.create(Object.getPrototypeOf(currentUser)), currentUser);
+    updatedUser.displayName = displayName;
+    updatedUser.photoURL = photoURL;
     setUser(updatedUser);
   };
   
   const updateUserPassword = async (newPassword: string) => {
-      if (!auth.currentUser) throw new Error("Usuário não autenticado.");
+      const currentUser = auth.currentUser;
+      if (!currentUser) throw new Error("Usuário não autenticado.");
       if (!isFirebaseConfigured) {
           console.log("Mock password update.");
           return;
       }
       try {
-        await updatePassword(auth.currentUser, newPassword);
+        await updatePassword(currentUser, newPassword);
       } catch (error: any) {
         if (error.code === 'auth/requires-recent-login') {
-            // Re-authenticate the user
             const provider = new GoogleAuthProvider();
-            await reauthenticateWithPopup(auth.currentUser, provider);
-            // Retry updating the password
-            await updatePassword(auth.currentUser, newPassword);
+            await reauthenticateWithPopup(currentUser, provider);
+            await updatePassword(currentUser, newPassword);
         } else {
            throw error;
         }
@@ -170,6 +205,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     user,
     loading,
     signInWithGoogle,
+    signInWithEmailPassword,
+    signUpWithEmailPassword,
     logout,
     updateUserProfile,
     updateUserPassword,

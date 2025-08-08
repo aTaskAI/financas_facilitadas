@@ -44,7 +44,7 @@ export default function ProfilePage() {
   const { control: profileControl, handleSubmit: handleProfileSubmit, formState: { errors: profileErrors }, setValue: setProfileValue } = useForm({
     resolver: zodResolver(profileSchema),
     defaultValues: {
-      displayName: user?.displayName || '',
+      displayName: '',
     }
   });
 
@@ -76,10 +76,10 @@ export default function ProfilePage() {
       });
       setNewPhoto(null);
       setPhotoPreview(null);
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Erro",
-        description: "Não foi possível atualizar o perfil. Tente novamente.",
+        description: error.message || "Não foi possível atualizar o perfil. Tente novamente.",
         variant: "destructive",
       });
     } finally {
@@ -88,7 +88,17 @@ export default function ProfilePage() {
   };
 
   const onPasswordSubmit = async (data: z.infer<typeof passwordSchema>) => {
-     if (!updateUserPassword) return;
+     if (!updateUserPassword || !user) return;
+     // Do not allow password change for Google provider
+     if (user.providerData.some(p => p.providerId === 'google.com')) {
+        toast({
+            title: "Ação não permitida",
+            description: "Você não pode alterar a senha de uma conta logada com o Google.",
+            variant: "destructive",
+        });
+        return;
+     }
+
     setIsPasswordSaving(true);
     try {
       await updateUserPassword(data.newPassword);
@@ -100,7 +110,7 @@ export default function ProfilePage() {
     } catch (error: any) {
        toast({
         title: "Erro",
-        description: `Não foi possível alterar a senha. ${error.message}`,
+        description: error.message || `Não foi possível alterar a senha.`,
         variant: "destructive",
       });
     } finally {
@@ -120,6 +130,8 @@ export default function ProfilePage() {
     return <div className="flex h-screen items-center justify-center">Carregando...</div>;
   }
 
+  const isGoogleProvider = user.providerData.some(p => p.providerId === 'google.com');
+
   return (
     <div className="container mx-auto max-w-4xl p-4 sm:p-6 lg:p-8">
       <div className="flex items-center justify-between mb-6">
@@ -133,8 +145,7 @@ export default function ProfilePage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        <div className="md:col-span-2">
-          <form onSubmit={handleProfileSubmit(onProfileSubmit)}>
+        <form onSubmit={handleProfileSubmit(onProfileSubmit)} className="md:col-span-2">
             <Card>
               <CardHeader>
                 <CardTitle>Informações Pessoais</CardTitle>
@@ -169,8 +180,7 @@ export default function ProfilePage() {
                 </Button>
               </CardFooter>
             </Card>
-          </form>
-        </div>
+        </form>
 
         <div className="space-y-8">
            <Card>
@@ -185,7 +195,7 @@ export default function ProfilePage() {
                    <Controller
                     name="newPassword"
                     control={passwordControl}
-                    render={({ field }) => <Input {...field} id="newPassword" type="password" />}
+                    render={({ field }) => <Input {...field} id="newPassword" type="password" disabled={isGoogleProvider} />}
                   />
                   {passwordErrors.newPassword && <p className="text-sm text-red-500">{passwordErrors.newPassword.message}</p>}
                 </div>
@@ -194,13 +204,14 @@ export default function ProfilePage() {
                   <Controller
                     name="confirmPassword"
                     control={passwordControl}
-                    render={({ field }) => <Input {...field} id="confirmPassword" type="password" />}
+                    render={({ field }) => <Input {...field} id="confirmPassword" type="password" disabled={isGoogleProvider} />}
                   />
                   {passwordErrors.confirmPassword && <p className="text-sm text-red-500">{passwordErrors.confirmPassword.message}</p>}
                 </div>
+                {isGoogleProvider && <p className="text-xs text-muted-foreground pt-2">Você não pode alterar a senha de uma conta logada com o Google.</p>}
               </CardContent>
               <CardFooter>
-                <Button type="submit" disabled={isPasswordSaving}>
+                <Button type="submit" disabled={isPasswordSaving || isGoogleProvider}>
                   {isPasswordSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Alterar Senha
                 </Button>
