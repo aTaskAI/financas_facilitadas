@@ -97,10 +97,10 @@ export default function Home() {
             <main>
               {/* This is a simple router based on URL hash */}
               <div id="dashboard"><DashboardTab /></div>
-              <div id="simulator" className="hidden"><FinancingSimulator /></div>
-              <div id="expenses" className="hidden"><ExpenseTracker /></div>
-              <div id="couple" className="hidden"><CouplesFinance /></div>
-              <div id="loans" className="hidden"><LoansTracker /></div>
+              <div id="simulator"><FinancingSimulator /></div>
+              <div id="expenses"><ExpenseTracker /></div>
+              <div id="couple"><CouplesFinance /></div>
+              <div id="loans"><LoansTracker /></div>
             </main>
 
             <style jsx>{`
@@ -111,8 +111,8 @@ export default function Home() {
                 display: block;
               }
               /* Show dashboard by default if no hash is present */
-              main > div:not([id="dashboard"]) {
-                display: none;
+              main > div:not(:target) ~ div[id="dashboard"] {
+                 display: block;
               }
               main > div:target ~ div[id="dashboard"] {
                  display: none;
@@ -126,7 +126,7 @@ export default function Home() {
                     const hash = window.location.hash.substring(1);
                     const sections = document.querySelectorAll('main > div');
                     let sectionToShow = 'dashboard';
-                    if (hash) {
+                    if (hash && document.getElementById(hash)) {
                       sectionToShow = hash;
                     }
                     
@@ -139,8 +139,11 @@ export default function Home() {
                     });
                   }
                   window.addEventListener('hashchange', handleHashChange, false);
+                  
                   // Initial load
                   document.addEventListener('DOMContentLoaded', handleHashChange);
+                  
+                  // Fallback for initial load if DOMContentLoaded is tricky
                   handleHashChange();
               `,
               }}
