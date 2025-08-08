@@ -31,39 +31,64 @@ interface AuthContextType {
   loading: boolean;
   logout: () => void;
   updateUserData: (data: Partial<UserData>) => Promise<void>;
+  login?: (email?: string, password?: string) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const useMockAuth = () => {
-    const [user, setUser] = useState<User | null>({
-        uid: 'mock-user-id',
-        email: 'mock@example.com',
-        displayName: 'Mock User',
-        photoURL: 'https://placehold.co/100x100.png',
-    } as User);
+    const [user, setUser] = useState<User | null>(null);
     const [userData, setUserData] = useState<UserData | null>(null);
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
     const router = useRouter();
+
+    useEffect(() => {
+      // If there is a mock user in local storage, use it.
+      const mockUser = localStorage.getItem('mockUser');
+      if (mockUser) {
+        setUser(JSON.parse(mockUser));
+        const mockUserData = localStorage.getItem('mockUserData');
+        if (mockUserData) {
+          setUserData(JSON.parse(mockUserData));
+        }
+      }
+      setLoading(false);
+    }, []);
+
+    const login = (email?: string, password?: string) => {
+      const mockUser = {
+          uid: 'mock-user-id',
+          email: email || 'mock@example.com',
+          displayName: 'Mock User',
+          photoURL: 'https://placehold.co/100x100.png',
+      } as User;
+      setUser(mockUser);
+      localStorage.setItem('mockUser', JSON.stringify(mockUser));
+      // Check if user data exists, if not, redirect to welcome
+      const mockUserData = localStorage.getItem('mockUserData');
+      if (!mockUserData) {
+        router.push('/welcome');
+      } else {
+        setUserData(JSON.parse(mockUserData));
+        router.push('/');
+      }
+    };
 
     const logout = async () => {
         setUser(null);
         setUserData(null);
+        localStorage.removeItem('mockUser');
+        localStorage.removeItem('mockUserData');
         router.push('/login');
     };
 
     const updateUserData = async (data: Partial<UserData>) => {
-        setUserData(prev => ({...prev, ...data} as UserData));
+        const newUserData = {...userData, ...data} as UserData
+        setUserData(newUserData);
+        localStorage.setItem('mockUserData', JSON.stringify(newUserData));
     };
-    
-     useEffect(() => {
-      if(user && !userData) {
-        // router.push('/welcome');
-      }
-    }, [user, userData, router])
 
-
-    return { user, userData, loading, logout, updateUserData };
+    return { user, userData, loading, logout, updateUserData, login };
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -115,6 +140,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
         if (isFirebaseConfigured) {
             await firebaseSignOut(auth);
+        } else {
+            mockAuth.logout();
         }
       router.push('/login');
     } catch (error) {

@@ -24,18 +24,17 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
-  const { login: mockLogin } = useAuth() as any;
+  const { login } = useAuth();
 
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
     if (!isFirebaseConfigured) {
-      // For mock environment, just proceed
-       if(mockLogin) mockLogin(email, password);
-      router.push('/');
+      if(login) login(email, password);
       return;
     }
-    setIsLoading(true);
+    
     try {
       if (isLogin) {
         await signInWithEmailAndPassword(auth, email, password);
@@ -60,11 +59,11 @@ export default function LoginPage() {
   };
   
   const handleGoogleSignIn = async () => {
+    setIsLoading(true);
     if (!isFirebaseConfigured) {
-      router.push('/');
+      if(login) login();
       return;
     }
-    setIsLoading(true);
     const provider = new GoogleAuthProvider();
     try {
         await signInWithPopup(auth, provider);
