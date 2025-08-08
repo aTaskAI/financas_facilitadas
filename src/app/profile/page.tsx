@@ -132,43 +132,45 @@ export default function ProfilePage() {
          </Link>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <Card>
-          <CardHeader>
-            <CardTitle>Informações Pessoais</CardTitle>
-            <CardDescription>Atualize seu nome e foto de perfil.</CardDescription>
-          </CardHeader>
-          <form onSubmit={handleProfileSubmit(onProfileSubmit)}>
-            <CardContent className="space-y-6">
-              <div className="flex items-center gap-4">
-                <Avatar className="h-20 w-20">
-                  <AvatarImage src={photoPreview || user.photoURL || undefined} alt={user.displayName || 'User'} />
-                  <AvatarFallback>{user.displayName?.charAt(0)}</AvatarFallback>
-                </Avatar>
-                <Input id="picture" type="file" onChange={handlePhotoChange} accept="image/*" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="displayName">Nome</Label>
-                <Controller
-                  name="displayName"
-                  control={profileControl}
-                  render={({ field }) => <Input {...field} id="displayName" />}
-                />
-                {profileErrors.displayName && <p className="text-sm text-red-500">{profileErrors.displayName.message}</p>}
-              </div>
-              <div className="space-y-2">
-                <Label>Email</Label>
-                <Input value={user.email || ''} disabled />
-              </div>
-            </CardContent>
-            <CardFooter>
-              <Button type="submit" disabled={isProfileSaving}>
-                {isProfileSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Salvar Alterações
-              </Button>
-            </CardFooter>
-          </form>
-        </Card>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="md:col-span-2">
+            <Card>
+              <CardHeader>
+                <CardTitle>Informações Pessoais</CardTitle>
+                <CardDescription>Atualize seu nome e foto de perfil.</CardDescription>
+              </CardHeader>
+              <form onSubmit={handleProfileSubmit(onProfileSubmit)}>
+                <CardContent className="space-y-6">
+                  <div className="flex items-center gap-4">
+                    <Avatar className="h-20 w-20">
+                      <AvatarImage src={photoPreview || user.photoURL || undefined} alt={user.displayName || 'User'} />
+                      <AvatarFallback>{user.displayName?.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                    <Input id="picture" type="file" onChange={handlePhotoChange} accept="image/*" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="displayName">Nome</Label>
+                    <Controller
+                      name="displayName"
+                      control={profileControl}
+                      render={({ field }) => <Input {...field} id="displayName" />}
+                    />
+                    {profileErrors.displayName && <p className="text-sm text-red-500">{profileErrors.displayName.message}</p>}
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Email</Label>
+                    <Input value={user.email || ''} disabled />
+                  </div>
+                </CardContent>
+                <CardFooter>
+                  <Button type="submit" disabled={isProfileSaving}>
+                    {isProfileSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Salvar Alterações
+                  </Button>
+                </CardFooter>
+              </form>
+            </Card>
+        </div>
 
         <div className="space-y-8">
            <Card>
