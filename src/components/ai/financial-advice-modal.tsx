@@ -53,14 +53,18 @@ export function FinancialAdviceModal() {
     setAdvice(null);
     try {
       // Aggregate data from context
-      const monthlyIncome = expenseData.subTabs[expenseData.currentSubTabId]?.data[expenseData.year]?.receitas[expenseData.month]
-        .reduce((acc, r) => acc + r.valor, 0) || (couplesData.yearData[couplesData.year]?.[couplesData.month]?.rendaA || 0) + (couplesData.yearData[couplesData.year]?.[couplesData.month]?.rendaB || 0) || 0;
+      const currentExpenseTab = expenseData.subTabs[expenseData.currentSubTabId];
+      const currentMonthExpenses = currentExpenseTab?.data[expenseData.year]?.[expenseData.month];
 
-      const monthlyExpenses = (expenseData.subTabs[expenseData.currentSubTabId]?.data[expenseData.year]?.essenciais[expenseData.month]
-        .reduce((acc, e) => acc + e.valor, 0) || 0) + 
-        (expenseData.subTabs[expenseData.currentSubTabId]?.data[expenseData.year]?.naoEssenciais[expenseData.month]
-        .reduce((acc, e) => acc + e.valor, 0) || 0);
+      const monthlyIncome = 
+          (currentMonthExpenses?.receitas.reduce((acc, r) => acc + r.valor, 0) || 0) +
+          (couplesData.yearData[couplesData.year]?.[couplesData.month]?.rendaA || 0) + 
+          (couplesData.yearData[couplesData.year]?.[couplesData.month]?.rendaB || 0);
 
+      const monthlyExpenses = 
+          (currentMonthExpenses?.essenciais.reduce((acc, e) => acc + e.valor, 0) || 0) + 
+          (currentMonthExpenses?.naoEssenciais.reduce((acc, e) => acc + e.valor, 0) || 0);
+          
       const totalDebts = (simulatorData.valorFinanciado || 0) + loans.reduce((acc, loan) => {
         const paidAmount = loan.pagamentos.filter(p => p.pago).reduce((sum, p) => sum + p.valor, 0);
         return acc + (loan.valorTotal - paidAmount);

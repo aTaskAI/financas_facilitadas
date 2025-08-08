@@ -142,20 +142,22 @@ export function ExpenseTracker() {
   const meses = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
 
   const renderList = (categoria: Categoria, title: string, icon: React.ReactNode) => (
-    <Card onDrop={(e) => handleDrop(e, categoria)} onDragOver={handleDragOver} className="flex flex-col">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">{icon} {title}</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-2 flex-grow">
-        {currentMonthData[categoria].map(item => (
-          <div key={item.id} draggable onDragStart={(e) => handleDragStart(e, item.id, categoria)} className="flex gap-2 items-center p-2 rounded-md hover:bg-slate-100 cursor-move animate-fade-in-down">
-            <Input value={item.nome} onChange={e => handleItemChange(categoria, item.id, 'nome', e.target.value)} placeholder="Descrição" />
-            <Input type="number" value={item.valor} onChange={e => handleItemChange(categoria, item.id, 'valor', Number(e.target.value))} className="w-32" placeholder="Valor" />
-            <Button variant="ghost" size="icon" onClick={() => removeItem(categoria, item.id)}><Trash2 className="h-4 w-4 text-red-500" /></Button>
-          </div>
-        ))}
-      </CardContent>
-      <div className="p-4 pt-0">
+    <Card className="flex flex-col">
+       <div className="flex-grow" onDrop={(e) => handleDrop(e, categoria)} onDragOver={handleDragOver}>
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2">{icon} {title}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2 flex-grow">
+                {currentMonthData[categoria].map(item => (
+                <div key={item.id} draggable onDragStart={(e) => handleDragStart(e, item.id, categoria)} className="flex gap-2 items-center p-2 rounded-md hover:bg-slate-100 cursor-move animate-fade-in-down">
+                    <Input value={item.nome} onChange={e => handleItemChange(categoria, item.id, 'nome', e.target.value)} placeholder="Descrição" />
+                    <Input type="number" value={item.valor} onChange={e => handleItemChange(categoria, item.id, 'valor', Number(e.target.value))} className="w-32" placeholder="Valor" />
+                    <Button variant="ghost" size="icon" onClick={() => removeItem(categoria, item.id)}><Trash2 className="h-4 w-4 text-red-500" /></Button>
+                </div>
+                ))}
+            </CardContent>
+       </div>
+      <div className="p-4 pt-0 mt-auto">
         <Button onClick={() => addItem(categoria)} className="w-full mt-2"><PlusCircle className="mr-2 h-4 w-4" /> Adicionar</Button>
       </div>
     </Card>
