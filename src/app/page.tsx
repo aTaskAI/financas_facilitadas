@@ -16,6 +16,7 @@ import { UserNav } from '@/components/user-nav';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
+import { cn } from '@/lib/utils';
 
 
 const navItems = [
@@ -49,7 +50,7 @@ export default function Home() {
 
   const renderNav = () => {
     const navContent = (
-      <TabsList className={cn(!isMobile && "grid w-full max-w-4xl grid-cols-5")}>
+      <TabsList className={cn(!isMobile && "grid w-full max-w-4xl grid-cols-5", isMobile && "w-max")}>
         {navItems.map((item) => (
           <TabsTrigger key={item.value} value={item.value}>
             <item.icon className="h-4 w-4 mr-2" />
@@ -62,7 +63,7 @@ export default function Home() {
     if (isMobile) {
       return (
         <ScrollArea className="w-full whitespace-nowrap rounded-md">
-          <div className="flex w-max space-x-2">
+          <div className="flex justify-center">
            {navContent}
           </div>
         </ScrollArea>

@@ -177,10 +177,10 @@ export function DashboardTab() {
   const renderCharts = () => {
     if (isMobile) {
       return (
-         <Carousel className="w-full" opts={{ loop: false }}>
-            <CarouselContent>
+         <Carousel className="w-full" opts={{ loop: false, align: "start" }}>
+            <CarouselContent className="-ml-2">
               {chartCards.map((chart) => (
-                <CarouselItem key={chart.key}>
+                <CarouselItem key={chart.key} className="pl-2 md:basis-1/2 lg:basis-1/3">
                   <div className="p-1">{chart.content}</div>
                 </CarouselItem>
               ))}
