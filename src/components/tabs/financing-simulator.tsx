@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useFinancialData } from '@/contexts/financial-data-context';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -14,9 +14,11 @@ import { SimulatorData } from '@/types';
 function calculateFinancing(data: SimulatorData) {
     const { preco, entradaPct, parcelas, taxaAnual, amortizacao } = data;
     
+    if (preco <= 0 || parcelas <= 0 || taxaAnual <= 0) return null;
+
     const valorEntrada = preco * (entradaPct / 100);
     const valorFinanciado = preco - valorEntrada;
-    if (valorFinanciado <= 0 || parcelas <= 0 || taxaAnual <= 0) return null;
+    if (valorFinanciado <= 0) return null;
 
     const taxaMensal = (Math.pow(1 + taxaAnual / 100, 1 / 12) - 1);
     
@@ -95,24 +97,34 @@ function calculateFinancing(data: SimulatorData) {
 
 
 export function FinancingSimulator() {
-  const { simulatorData: initialData, setSimulatorData: setGlobalData } = useFinancialData();
+  const { simulatorData: globalData, setSimulatorData: setGlobalData } = useFinancialData();
   
-  // Usar um estado local para evitar o loop com o contexto
-  const [localData, setLocalData] = useState<SimulatorData>(initialData);
+  // Use um estado local para todas as edições.
+  const [localData, setLocalData] = useState<SimulatorData>(globalData);
+
+  // Sincronize o estado global com o local APENAS QUANDO O COMPONENTE FOR DEIXADO
+  useEffect(() => {
+    // Isso é chamado quando o componente é "desmontado" (o usuário troca de aba)
+    return () => {
+      setGlobalData(localData);
+    };
+  }, [localData, setGlobalData]);
+  
+  // Se o usuário mudar (ex: login/logout), atualize o estado local com os novos dados globais.
+  useEffect(() => {
+    setLocalData(globalData);
+  }, [globalData.nomeA, globalData.nomeB]);
+
 
   const handleInputChange = (field: keyof SimulatorData, value: string | number | boolean) => {
-    const updatedData = { ...localData, [field]: value };
-    setLocalData(updatedData);
-    setGlobalData(updatedData); // Atualiza o contexto apenas quando há mudança
+    setLocalData(prev => ({ ...prev, [field]: value }));
   };
 
   const handleCheckboxChange = (parcela: number, checked: boolean) => {
-     const updatedData = {
-        ...localData,
-        parcelasPagas: { ...localData.parcelasPagas, [parcela]: checked },
-    };
-    setLocalData(updatedData);
-    setGlobalData(updatedData);
+     setLocalData(prev => ({
+        ...prev,
+        parcelasPagas: { ...prev.parcelasPagas, [parcela]: checked },
+    }));
   };
 
   const results = useMemo(() => calculateFinancing(localData), [localData]);
@@ -220,3 +232,5 @@ export function FinancingSimulator() {
     </div>
   );
 }
+
+    
