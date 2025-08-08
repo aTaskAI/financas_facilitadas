@@ -105,14 +105,14 @@ export function FinancingSimulator() {
   const { simulatorData, setSimulatorData } = useFinancialData();
 
   const handleInputChange = (field: keyof SimulatorData, value: string | number | boolean) => {
-    setSimulatorData(prev => ({ ...prev, [field]: value }));
+    setSimulatorData({ ...simulatorData, [field]: value });
   };
 
   const handleCheckboxChange = (parcela: number, checked: boolean) => {
-     setSimulatorData(prev => ({
-        ...prev,
-        parcelasPagas: { ...prev.parcelasPagas, [parcela]: checked },
-    }));
+     setSimulatorData({
+        ...simulatorData,
+        parcelasPagas: { ...simulatorData.parcelasPagas, [parcela]: checked },
+    });
   };
 
   const results = useMemo(() => calculateFinancing(simulatorData), [simulatorData]);
@@ -124,7 +124,7 @@ export function FinancingSimulator() {
           <CardTitle>🏠 Dados do Imóvel</CardTitle>
         </CardHeader>
         <CardContent>
-           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div><Label htmlFor="preco">Preço do Imóvel (R$)</Label><Input id="preco" type="number" value={simulatorData.preco} onChange={e => handleInputChange('preco', Number(e.target.value))} /></div>
             <div><Label htmlFor="entrada">Entrada (%)</Label><Input id="entrada" type="number" value={simulatorData.entradaPct} onChange={e => handleInputChange('entradaPct', Number(e.target.value))} /></div>
             <div><Label htmlFor="parcelas">Parcelas (meses)</Label><Input id="parcelas" type="number" value={simulatorData.parcelas} onChange={e => handleInputChange('parcelas', Number(e.target.value))} /></div>
@@ -159,7 +159,7 @@ export function FinancingSimulator() {
     <div className="space-y-6">
       <Card>
         <CardHeader><CardTitle>🏠 Dados do Imóvel e Financiamento</CardTitle></CardHeader>
-        <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div><Label htmlFor="preco">Preço do Imóvel (R$)</Label><Input id="preco" type="number" value={simulatorData.preco} onChange={e => handleInputChange('preco', Number(e.target.value))} /></div>
           <div><Label htmlFor="entrada">Entrada (%)</Label><Input id="entrada" type="number" value={simulatorData.entradaPct} onChange={e => handleInputChange('entradaPct', Number(e.target.value))} /></div>
           <div><Label htmlFor="parcelas">Parcelas (meses)</Label><Input id="parcelas" type="number" value={simulatorData.parcelas} onChange={e => handleInputChange('parcelas', Number(e.target.value))} /></div>
@@ -191,7 +191,10 @@ export function FinancingSimulator() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Pago</TableHead><TableHead>Parcela</TableHead><TableHead>Saldo Devedor</TableHead><TableHead>Amortização</TableHead><TableHead>Juros</TableHead><TableHead>Prestação</TableHead><TableHead>{simulatorData.nomeA}</TableHead><TableHead>{simulatorData.nomeB}</TableHead>
+                  <TableHead className="w-[50px]">Pago</TableHead>
+                  <TableHead>Parcela</TableHead><TableHead>Saldo Devedor</TableHead><TableHead>Amortização</TableHead><TableHead>Juros</TableHead><TableHead>Prestação</TableHead>
+                  <TableHead className="hidden sm:table-cell">{simulatorData.nomeA}</TableHead>
+                  <TableHead className="hidden sm:table-cell">{simulatorData.nomeB}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -207,7 +210,13 @@ export function FinancingSimulator() {
                      )}
                     <TableRow className={row.parcela <= tempoComAmort && (simulatorData.amortizacao || 0) > 0 ? "bg-amber-50" : ""}>
                       <TableCell><Checkbox checked={isChecked} onCheckedChange={(checked) => handleCheckboxChange(row.parcela, !!checked)} /></TableCell>
-                      <TableCell>{row.parcela}</TableCell><TableCell>{formatCurrency(row.saldoDevedor)}</TableCell><TableCell>{formatCurrency(row.amortizacao)}</TableCell><TableCell>{formatCurrency(row.juros)}</TableCell><TableCell>{formatCurrency(row.prestacao)}</TableCell><TableCell>{formatCurrency(parteA)}</TableCell><TableCell>{formatCurrency(parteB)}</TableCell>
+                      <TableCell>{row.parcela}</TableCell>
+                      <TableCell>{formatCurrency(row.saldoDevedor)}</TableCell>
+                      <TableCell>{formatCurrency(row.amortizacao)}</TableCell>
+                      <TableCell>{formatCurrency(row.juros)}</TableCell>
+                      <TableCell>{formatCurrency(row.prestacao)}</TableCell>
+                      <TableCell className="hidden sm:table-cell">{formatCurrency(parteA)}</TableCell>
+                      <TableCell className="hidden sm:table-cell">{formatCurrency(parteB)}</TableCell>
                     </TableRow>
                     </React.Fragment>
                   );

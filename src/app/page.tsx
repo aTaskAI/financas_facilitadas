@@ -51,7 +51,7 @@ export default function Home() {
         </header>
 
         <Tabs defaultValue="dashboard" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-5 h-auto sm:h-12">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-5 h-auto md:h-12">
             <TabsTrigger value="dashboard" className="py-2.5">
               <LayoutDashboard className="h-4 w-4 mr-2" />
               Dashboard

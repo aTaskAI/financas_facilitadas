@@ -40,21 +40,21 @@ export function ExpenseTracker() {
   const currentMonthData = getSafeMonthData();
 
   const handleSubTabChange = (id: string) => {
-    setExpenseData(prev => ({ ...prev, currentSubTabId: id }));
+    setExpenseData({ ...expenseData, currentSubTabId: id });
   };
 
   const addSubTab = () => {
     const nome = prompt('Nome da nova pessoa:');
     if (nome) {
       const id = `person_${Date.now()}`;
-      setExpenseData(prev => ({
-        ...prev,
+      setExpenseData({
+        ...expenseData,
         subTabs: {
-          ...prev.subTabs,
+          ...expenseData.subTabs,
           [id]: { nome, data: {} },
         },
         currentSubTabId: id,
-      }));
+      });
     }
   };
   
@@ -91,7 +91,7 @@ export function ExpenseTracker() {
     setNewItem(prev => ({
         ...prev,
         [categoria]: {
-            ...prev[categoria],
+            ...(prev[categoria] || { nome: '', valor: '' }),
             [field]: value
         }
     }));
@@ -178,23 +178,23 @@ export function ExpenseTracker() {
 
   return (
     <div className="space-y-6">
-       <div className="flex flex-wrap gap-4 items-center">
+       <div className="flex flex-col sm:flex-row flex-wrap gap-4 items-center">
           <Select value={currentSubTabId} onValueChange={handleSubTabChange}>
-            <SelectTrigger className="w-[200px]"><SelectValue placeholder="Pessoa" /></SelectTrigger>
+            <SelectTrigger className="w-full sm:w-[200px]"><SelectValue placeholder="Pessoa" /></SelectTrigger>
             <SelectContent>
               {Object.keys(subTabs).map(id => <SelectItem key={id} value={id}>{subTabs[id].nome}</SelectItem>)}
             </SelectContent>
           </Select>
           <Button variant="outline" onClick={addSubTab}><UserPlus className="mr-2 h-4 w-4" /> Nova Pessoa</Button>
-          <div className="flex-grow" />
-          <Select value={String(month)} onValueChange={(val) => setExpenseData(p => ({...p, month: Number(val)}))}>
-            <SelectTrigger className="w-[180px]"><SelectValue placeholder="Mês" /></SelectTrigger>
+          <div className="flex-grow hidden sm:block" />
+          <Select value={String(month)} onValueChange={(val) => setExpenseData({ ...expenseData, month: Number(val) })}>
+            <SelectTrigger className="w-full sm:w-[180px]"><SelectValue placeholder="Mês" /></SelectTrigger>
             <SelectContent>
               {meses.map((m, i) => <SelectItem key={i} value={String(i)}>{m}</SelectItem>)}
             </SelectContent>
           </Select>
-          <Select value={String(year)} onValueChange={(val) => setExpenseData(p => ({...p, year: Number(val)}))}>
-            <SelectTrigger className="w-[120px]"><SelectValue placeholder="Ano" /></SelectTrigger>
+          <Select value={String(year)} onValueChange={(val) => setExpenseData({ ...expenseData, year: Number(val) })}>
+            <SelectTrigger className="w-full sm:w-[120px]"><SelectValue placeholder="Ano" /></SelectTrigger>
             <SelectContent>
               {[...Array(10)].map((_, i) => <SelectItem key={i} value={String(new Date().getFullYear() - 5 + i)}>{new Date().getFullYear() - 5 + i}</SelectItem>)}
             </SelectContent>

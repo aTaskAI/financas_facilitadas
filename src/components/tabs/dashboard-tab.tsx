@@ -9,6 +9,7 @@ import { DollarSign, TrendingDown, TrendingUp, ChevronLeft, ChevronRight, BarCha
 import { MonthlySpendingChart } from '@/components/charts/monthly-spending-chart';
 import { SpendingDonutChart } from '@/components/charts/spending-donut-chart';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Button } from '../ui/button';
 
 const meses = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
 
@@ -66,42 +67,42 @@ export function DashboardTab() {
   });
 
   const donutChartData = [
-    ...currentMonthData.essenciais.map(d => ({ name: d.nome, value: d.valor, fill: 'hsl(var(--destructive))' })),
-    ...currentMonthData.naoEssenciais.map(d => ({ name: d.nome, value: d.valor, fill: 'hsl(var(--accent))' }))
+    { name: 'Essenciais', value: essenciais, fill: 'hsl(var(--destructive))' },
+    { name: 'Não Essenciais', value: naoEssenciais, fill: 'hsl(var(--accent))' }
   ].filter(d => d.value > 0);
 
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-2">
-            <button onClick={() => handleMonthChange('prev')} className="p-2 rounded-md hover:bg-muted"><ChevronLeft className="h-5 w-5" /></button>
-            <h2 className="text-xl font-bold w-28 text-center">{meses[month]}</h2>
-            <button onClick={() => handleMonthChange('next')} className="p-2 rounded-md hover:bg-muted"><ChevronRight className="h-5 w-5" /></button>
+            <Button variant="outline" size="icon" onClick={() => handleMonthChange('prev')} className="h-8 w-8"><ChevronLeft className="h-4 w-4" /></Button>
+            <h2 className="text-xl font-bold w-32 text-center">{meses[month]} de {year}</h2>
+            <Button variant="outline" size="icon" onClick={() => handleMonthChange('next')} className="h-8 w-8"><ChevronRight className="h-4 w-4" /></Button>
         </div>
       </div>
         
-       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Resultado do Período</CardTitle>
+                    <CardTitle className="text-sm font-medium">Resultado do Mês</CardTitle>
                     <DollarSign className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                    <div className="text-3xl font-bold">{formatCurrency(saldo)}</div>
-                    <p className={`text-xs ${saldoChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        {saldoChange >= 0 ? '+' : ''}{saldoChange.toFixed(2)}% em relação ao mês anterior
+                    <div className="text-2xl font-bold">{formatCurrency(saldo)}</div>
+                    <p className={`text-xs ${saldoChange >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                        {saldoChange >= 0 ? '+' : ''}{saldoChange.toFixed(1)}% em relação ao mês anterior
                     </p>
                 </CardContent>
             </Card>
             <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">Entradas</CardTitle>
-                    <TrendingUp className="h-4 w-4 text-green-500" />
+                    <TrendingUp className="h-4 w-4 text-emerald-500" />
                 </CardHeader>
                 <CardContent>
-                    <div className="text-3xl font-bold text-green-600">{formatCurrency(receitas)}</div>
-                    <p className="text-xs text-muted-foreground">Total de receitas no mês</p>
+                    <div className="text-2xl font-bold text-emerald-600">{formatCurrency(receitas)}</div>
+                    <p className="text-xs text-muted-foreground">Total de receitas no período</p>
                 </CardContent>
             </Card>
             <Card>
@@ -110,21 +111,21 @@ export function DashboardTab() {
                     <TrendingDown className="h-4 w-4 text-red-500" />
                 </CardHeader>
                 <CardContent>
-                    <div className="text-3xl font-bold text-red-600">{formatCurrency(totalDespesas)}</div>
-                    <p className="text-xs text-muted-foreground">Total de despesas no mês</p>
+                    <div className="text-2xl font-bold text-red-600">{formatCurrency(totalDespesas)}</div>
+                    <p className="text-xs text-muted-foreground">Total de despesas no período</p>
                 </CardContent>
             </Card>
         </div>
         
-        <Tabs defaultValue="evolution">
-            <TabsList>
-                <TabsTrigger value="evolution"><BarChart className="mr-2" /> Evolução no Ano</TabsTrigger>
-                <TabsTrigger value="category"><PieChart className="mr-2" /> Despesas por Categoria</TabsTrigger>
+        <Tabs defaultValue="evolution" className="w-full">
+            <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2">
+                <TabsTrigger value="evolution"><BarChart className="mr-2 h-4 w-4" /> Evolução no Ano</TabsTrigger>
+                <TabsTrigger value="category"><PieChart className="mr-2 h-4 w-4" /> Despesas por Categoria</TabsTrigger>
             </TabsList>
-            <TabsContent value="evolution">
+            <TabsContent value="evolution" className="mt-4">
                 <MonthlySpendingChart data={allMonthsData} />
             </TabsContent>
-            <TabsContent value="category">
+            <TabsContent value="category" className="mt-4">
                 <SpendingDonutChart data={donutChartData} />
             </TabsContent>
         </Tabs>

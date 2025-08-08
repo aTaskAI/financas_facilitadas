@@ -14,19 +14,19 @@ export function CouplesFinance() {
   const currentMonthData = yearData[year]?.[month] || { rendaA: 0, rendaB: 0, poupancaA: 0, poupancaB: 0, contas: [], nomeA: 'Pessoa A', nomeB: 'Pessoa B' };
 
   const handleDataChange = <K extends keyof typeof currentMonthData>(field: K, value: (typeof currentMonthData)[K]) => {
-    setCouplesData(prev => ({
-      ...prev,
+    setCouplesData({
+      ...couplesData,
       yearData: {
-        ...prev.yearData,
+        ...couplesData.yearData,
         [year]: {
-          ...prev.yearData[year],
+          ...couplesData.yearData[year],
           [month]: {
             ...currentMonthData,
             [field]: value
           }
         }
       }
-    }));
+    });
   };
 
   const handleAccountChange = (id: number, field: 'descricao' | 'valor', value: string | number) => {
@@ -65,17 +65,17 @@ export function CouplesFinance() {
         <CardHeader>
           <CardTitle>Configuração Mensal</CardTitle>
         </CardHeader>
-        <CardContent className="flex flex-wrap gap-4 items-center">
-            <Select value={String(month)} onValueChange={(val) => setCouplesData(p => ({...p, month: Number(val)}))}>
-              <SelectTrigger className="w-[180px]">
+        <CardContent className="flex flex-col sm:flex-row gap-4 items-center">
+            <Select value={String(month)} onValueChange={(val) => setCouplesData({ ...couplesData, month: Number(val) })}>
+              <SelectTrigger className="w-full sm:w-[180px]">
                 <SelectValue placeholder="Mês" />
               </SelectTrigger>
               <SelectContent>
                 {meses.map((m, i) => <SelectItem key={i} value={String(i)}>{m}</SelectItem>)}
               </SelectContent>
             </Select>
-             <Select value={String(year)} onValueChange={(val) => setCouplesData(p => ({...p, year: Number(val)}))}>
-              <SelectTrigger className="w-[120px]">
+             <Select value={String(year)} onValueChange={(val) => setCouplesData({ ...couplesData, year: Number(val) })}>
+              <SelectTrigger className="w-full sm:w-[120px]">
                 <SelectValue placeholder="Ano" />
               </SelectTrigger>
               <SelectContent>

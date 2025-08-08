@@ -2,7 +2,7 @@
 
 import { createContext, useContext, ReactNode, useEffect, useState, useCallback } from 'react';
 import { useAuth } from './auth-context';
-import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
+import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { db, isFirebaseConfigured } from '@/lib/firebase';
 import type { SimulatorData, ExpenseData, CouplesData, Loan } from '@/types';
 import { cloneDeep, isEqual } from 'lodash';
@@ -38,17 +38,7 @@ const initialExpenseData: ExpenseData = {
 const initialCouplesData: CouplesData = {
   year: new Date().getFullYear(),
   month: new Date().getMonth(),
-  yearData: {
-    [new Date().getFullYear()]: Array.from({ length: 12 }, () => ({
-      rendaA: 5000,
-      rendaB: 4000,
-      poupancaA: 0,
-      poupancaB: 0,
-      contas: [],
-      nomeA: 'Pessoa A',
-      nomeB: 'Pessoa B'
-    }))
-  },
+  yearData: {},
 };
 
 const initialLoans: Loan[] = [];
@@ -63,13 +53,13 @@ interface AllFinancialData {
 // --- Context Definition ---
 interface FinancialDataContextType {
   simulatorData: SimulatorData;
-  setSimulatorData: (data: SimulatorData) => void;
+  setSimulatorData: React.Dispatch<React.SetStateAction<SimulatorData>>;
   expenseData: ExpenseData;
-  setExpenseData: (data: ExpenseData) => void;
+  setExpenseData: React.Dispatch<React.SetStateAction<ExpenseData>>;
   couplesData: CouplesData;
-  setCouplesData: (data: CouplesData) => void;
+  setCouplesData: React.Dispatch<React.SetStateAction<CouplesData>>;
   loans: Loan[];
-  setLoans: (data: Loan[]) => void;
+  setLoans: React.Dispatch<React.SetStateAction<Loan[]>>;
   isDataLoading: boolean;
 }
 
@@ -80,37 +70,24 @@ export function FinancialDataProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const uid = user?.uid;
 
-  const [allData, setAllData] = useState<AllFinancialData>({
-    simulatorData: cloneDeep(initialSimulatorData),
-    expenseData: cloneDeep(initialExpenseData),
-    couplesData: cloneDeep(initialCouplesData),
-    loans: cloneDeep(initialLoans)
-  });
+  const [simulatorData, setSimulatorData] = useState<SimulatorData>(cloneDeep(initialSimulatorData));
+  const [expenseData, setExpenseData] = useState<ExpenseData>(cloneDeep(initialExpenseData));
+  const [couplesData, setCouplesData] = useState<CouplesData>(cloneDeep(initialCouplesData));
+  const [loans, setLoans] = useState<Loan[]>(cloneDeep(initialLoans));
   const [isDataLoading, setIsDataLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
-  
-  // Create a stable setData function with useCallback
-  const setData = useCallback((newData: Partial<AllFinancialData>) => {
-    setAllData(prevData => {
-        const updatedData = { ...prevData, ...newData };
-        // Simple deep comparison to avoid unnecessary state updates and saves
-        if (!isEqual(prevData, updatedData)) {
-            return updatedData;
-        }
-        return prevData;
-    });
-  }, []);
+  const [lastSavedState, setLastSavedState] = useState<AllFinancialData | null>(null);
 
+  const getCombinedState = useCallback(() => {
+    return { simulatorData, expenseData, couplesData, loans };
+  }, [simulatorData, expenseData, couplesData, loans]);
+  
   // Effect to load data from Firestore when user logs in
   useEffect(() => {
     if (!uid || !isFirebaseConfigured) {
-        // Reset to initial state if no user or firebase not configured
-        setAllData({
-            simulatorData: cloneDeep(initialSimulatorData),
-            expenseData: cloneDeep(initialExpenseData),
-            couplesData: cloneDeep(initialCouplesData),
-            loans: cloneDeep(initialLoans)
-        });
+        setSimulatorData(cloneDeep(initialSimulatorData));
+        setExpenseData(cloneDeep(initialExpenseData));
+        setCouplesData(cloneDeep(initialCouplesData));
+        setLoans(cloneDeep(initialLoans));
         setIsDataLoading(false);
         return;
     }
@@ -122,27 +99,31 @@ export function FinancialDataProvider({ children }: { children: ReactNode }) {
         if (docSnap.exists()) {
             const firestoreData = docSnap.data() as AllFinancialData;
             // Merge with initial data to ensure all keys are present
-             setAllData(prevData => {
-                const updatedData = {
-                    simulatorData: { ...initialSimulatorData, ...firestoreData.simulatorData },
-                    expenseData: { ...initialExpenseData, ...firestoreData.expenseData },
-                    couplesData: { ...initialCouplesData, ...firestoreData.couplesData },
-                    loans: firestoreData.loans || [],
-                };
-                 // Only update state if data is different to prevent loops
-                if (!isEqual(prevData, updatedData)) {
-                    return updatedData;
-                }
-                return prevData;
-            });
+            const newState = {
+                simulatorData: { ...cloneDeep(initialSimulatorData), ...firestoreData.simulatorData },
+                expenseData: { ...cloneDeep(initialExpenseData), ...firestoreData.expenseData },
+                couplesData: { ...cloneDeep(initialCouplesData), ...firestoreData.couplesData },
+                loans: firestoreData.loans || [],
+            };
+            if (!isEqual(getCombinedState(), newState)) {
+                setSimulatorData(newState.simulatorData);
+                setExpenseData(newState.expenseData);
+                setCouplesData(newState.couplesData);
+                setLoans(newState.loans);
+            }
+            setLastSavedState(newState);
         } else {
-            // No document yet, use initial data
-             setAllData({
+            const initialState = {
                 simulatorData: cloneDeep(initialSimulatorData),
                 expenseData: cloneDeep(initialExpenseData),
                 couplesData: cloneDeep(initialCouplesData),
                 loans: cloneDeep(initialLoans)
-            });
+            };
+            setSimulatorData(initialState.simulatorData);
+            setExpenseData(initialState.expenseData);
+            setCouplesData(initialState.couplesData);
+            setLoans(initialState.loans);
+            setLastSavedState(initialState);
         }
         setIsDataLoading(false);
     }, (error) => {
@@ -151,48 +132,45 @@ export function FinancialDataProvider({ children }: { children: ReactNode }) {
     });
 
     return () => unsubscribe();
-  }, [uid]);
+  }, [uid, getCombinedState]);
 
   // Effect to save data to Firestore when it changes
   useEffect(() => {
-    if (!uid || !isFirebaseConfigured || isDataLoading || isSaving) {
+    const currentState = getCombinedState();
+    if (!uid || !isFirebaseConfigured || isDataLoading || isEqual(currentState, lastSavedState)) {
         return;
     }
 
-    const saveData = async () => {
-        setIsSaving(true);
+    const saveTimeout = setTimeout(async () => {
         try {
             const docRef = doc(db, 'users', uid);
-            // We need to convert custom objects to plain objects for Firestore
-            const dataToSave = JSON.parse(JSON.stringify(allData));
+            const dataToSave = JSON.parse(JSON.stringify(currentState));
             await setDoc(docRef, dataToSave, { merge: true });
+            setLastSavedState(currentState);
         } catch (error) {
             console.error("Error saving data to Firestore:", error);
-        } finally {
-             // Use a short timeout to prevent rapid-fire saves
-            setTimeout(() => setIsSaving(false), 500);
         }
-    };
-    
-    saveData();
-  }, [allData, uid, isDataLoading, isSaving]);
+    }, 1500); // Debounce saves to every 1.5 seconds
+
+    return () => clearTimeout(saveTimeout);
+  }, [getCombinedState, uid, isDataLoading, lastSavedState]);
   
   const value = {
-    simulatorData: allData.simulatorData,
-    setSimulatorData: (data: SimulatorData) => setData({ simulatorData: data }),
-    expenseData: allData.expenseData,
-    setExpenseData: (data: ExpenseData) => setData({ expenseData: data }),
-    couplesData: allData.couplesData,
-    setCouplesData: (data: CouplesData) => setData({ couplesData: data }),
-    loans: allData.loans,
-    setLoans: (data: Loan[]) => setData({ loans: data }),
+    simulatorData,
+    setSimulatorData,
+    expenseData,
+    setExpenseData,
+    couplesData,
+    setCouplesData,
+    loans,
+    setLoans,
     isDataLoading
   };
 
-  if (isDataLoading) {
+  if (isDataLoading && isFirebaseConfigured) {
     return (
         <div className="flex h-screen items-center justify-center">
-            <p>Carregando dados do usuário...</p>
+            <p>Carregando seus dados...</p>
         </div>
     );
   }
