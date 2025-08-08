@@ -92,24 +92,21 @@ export function FinancialDataProvider({ children }: { children: ReactNode }) {
   
   // Effect to load data from Firestore when user logs in
   useEffect(() => {
-    // Wait until auth is resolved
     if (authLoading) {
       return;
     }
-    
-    // If there is no user, initialize with default state and stop loading
-    if (!uid) {
+
+    if (!uid || !isFirebaseConfigured) {
         const initialState = getInitialState();
         setSimulatorData(initialState.simulatorData);
         setExpenseData(initialState.expenseData);
         setCouplesData(initialState.couplesData);
         setLoans(initialState.loans);
-        setLastSavedState(initialState);
+        setLastSavedState(cloneDeep(initialState));
         setIsDataLoading(false);
         return;
     }
-
-    // If there is a user, start loading data from Firestore
+    
     setIsDataLoading(true);
     const docRef = doc(db, 'users', uid);
 
@@ -117,8 +114,7 @@ export function FinancialDataProvider({ children }: { children: ReactNode }) {
         let finalState: AllFinancialData;
         if (docSnap.exists()) {
             const firestoreData = docSnap.data() as Partial<AllFinancialData>;
-            // Deep merge Firestore data with initial state to prevent missing keys
-            finalState = merge(getInitialState(), firestoreData);
+            finalState = merge({}, getInitialState(), firestoreData);
         } else {
             console.log("No document found for user, creating one.");
             finalState = getInitialState();
@@ -152,21 +148,20 @@ export function FinancialDataProvider({ children }: { children: ReactNode }) {
   // Effect to save data to Firestore when it changes
   useEffect(() => {
     const currentState = getCombinedState();
-    if (!uid || isDataLoading || isEqual(currentState, lastSavedState)) {
+    if (!uid || isDataLoading || !isFirebaseConfigured || isEqual(currentState, lastSavedState)) {
         return;
     }
 
     const saveTimeout = setTimeout(async () => {
         try {
             const docRef = doc(db, 'users', uid);
-            // Use JSON stringify/parse to remove any undefined values that Firestore doesn't support
             const dataToSave = JSON.parse(JSON.stringify(currentState));
             await setDoc(docRef, dataToSave, { merge: true });
             setLastSavedState(cloneDeep(currentState));
         } catch (error) {
             console.error("Error saving data to Firestore:", error);
         }
-    }, 1500); // Debounce saves to every 1.5 seconds
+    }, 1500); 
 
     return () => clearTimeout(saveTimeout);
   }, [getCombinedState, uid, isDataLoading, lastSavedState]);
@@ -183,8 +178,7 @@ export function FinancialDataProvider({ children }: { children: ReactNode }) {
     isDataLoading
   };
   
-  // Display a global loading indicator while auth or financial data is loading
-  if (authLoading || (isDataLoading && !!uid)) {
+  if (authLoading || (isDataLoading && !!uid && isFirebaseConfigured)) {
     return (
         <div className="flex h-screen items-center justify-center">
             <p>Carregando seus dados...</p>
