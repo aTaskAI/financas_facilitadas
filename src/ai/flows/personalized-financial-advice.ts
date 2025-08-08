@@ -24,7 +24,7 @@ const PersonalizedFinancialAdviceInputSchema = z.object({
 export type PersonalizedFinancialAdviceInput = z.infer<typeof PersonalizedFinancialAdviceInputSchema>;
 
 const PersonalizedFinancialAdviceOutputSchema = z.object({
-  advice: z.string().describe('Personalized financial advice based on the provided data.'),
+  advice: z.string().describe('Personalized financial advice based on the provided data, formatted in HTML with headings, lists, and bold text for better readability.'),
 });
 
 export type PersonalizedFinancialAdviceOutput = z.infer<typeof PersonalizedFinancialAdviceOutputSchema>;
@@ -49,6 +49,8 @@ const prompt = ai.definePrompt({
   Spending Patterns: {{spendingPatterns}}
 
   Focus on actionable steps the user can take to reduce expenses, increase income, manage debts, and improve their saving rate.
+
+  IMPORTANT: Format your response in HTML. Use headings (e.g., <h3>), lists (<ul>, <li>), and bold tags (<b>) to structure the advice for better readability.
 `,
 });
 

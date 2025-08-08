@@ -52,35 +52,57 @@ export function FinancialAdviceModal() {
     setIsLoading(true);
     setAdvice(null);
     try {
-      // Aggregate data from context
-      const currentExpenseTab = expenseData.subTabs[expenseData.currentSubTabId];
-      const currentMonthExpenses = currentExpenseTab?.data[expenseData.year]?.[expenseData.month];
+      const year = expenseData.year;
+      const month = expenseData.month;
+      
+      let totalMonthlyIncome = 0;
+      let totalMonthlyExpenses = 0;
+      
+      // 1. Aggregate income and expenses from all personal sub-tabs
+      for (const subTabId in expenseData.subTabs) {
+        const subTab = expenseData.subTabs[subTabId];
+        const monthData = subTab.data?.[year]?.[month];
+        if (monthData) {
+          totalMonthlyIncome += monthData.receitas.reduce((acc, r) => acc + r.valor, 0);
+          totalMonthlyExpenses += monthData.essenciais.reduce((acc, e) => acc + e.valor, 0);
+          totalMonthlyExpenses += monthData.naoEssenciais.reduce((acc, e) => acc + e.valor, 0);
+        }
+      }
 
-      const monthlyIncome = 
-          (currentMonthExpenses?.receitas.reduce((acc, r) => acc + r.valor, 0) || 0) +
-          (couplesData.yearData[couplesData.year]?.[couplesData.month]?.rendaA || 0) + 
-          (couplesData.yearData[couplesData.year]?.[couplesData.month]?.rendaB || 0);
+      // 2. Aggregate income and expenses from the couples tab
+      const coupleMonthData = couplesData.yearData?.[year]?.[month];
+      if (coupleMonthData) {
+        totalMonthlyIncome += coupleMonthData.rendaA || 0;
+        totalMonthlyIncome += coupleMonthData.rendaB || 0;
+        totalMonthlyExpenses += coupleMonthData.contas.reduce((acc, c) => acc + c.valor, 0);
+        totalMonthlyExpenses += coupleMonthData.poupancaA || 0; // Savings are considered an 'expense' for cash flow purposes
+        totalMonthlyExpenses += coupleMonthData.poupancaB || 0;
+      }
+      
+      // 3. Aggregate total debts
+      const financingDebt = simulatorData.valorFinanciado > 0 
+          ? simulatorData.valorFinanciado - (simulatorData.parcelasPagas ? Object.keys(simulatorData.parcelasPagas).length * (simulatorData.valorFinanciado / simulatorData.parcelas) : 0)
+          : 0;
 
-      const monthlyExpenses = 
-          (currentMonthExpenses?.essenciais.reduce((acc, e) => acc + e.valor, 0) || 0) + 
-          (currentMonthExpenses?.naoEssenciais.reduce((acc, e) => acc + e.valor, 0) || 0);
-          
-      const totalDebts = (simulatorData.valorFinanciado || 0) + loans.reduce((acc, loan) => {
+      const loansDebt = loans.reduce((acc, loan) => {
         const paidAmount = loan.pagamentos.filter(p => p.pago).reduce((sum, p) => sum + p.valor, 0);
         return acc + (loan.valorTotal - paidAmount);
       }, 0);
 
-      const savingRate = monthlyIncome > 0 ? ((monthlyIncome - monthlyExpenses) / monthlyIncome) * 100 : 0;
+      const totalDebts = financingDebt + loansDebt;
+
+      // 4. Calculate saving rate based on aggregated data
+      const savingRate = totalMonthlyIncome > 0 ? ((totalMonthlyIncome - totalMonthlyExpenses) / totalMonthlyIncome) * 100 : 0;
       
       const input: PersonalizedFinancialAdviceInput = {
-        income: monthlyIncome,
-        expenses: monthlyExpenses,
+        income: totalMonthlyIncome,
+        expenses: totalMonthlyExpenses,
         debts: totalDebts,
         savingRate: parseFloat(savingRate.toFixed(2)),
         financialGoals: data.financialGoals,
         spendingPatterns: data.spendingPatterns,
       };
-
+      
       const result = await getPersonalizedFinancialAdvice(input);
       setAdvice(result.advice);
     } catch (error) {
@@ -94,9 +116,16 @@ export function FinancialAdviceModal() {
       setIsLoading(false);
     }
   };
+  
+  const handleOpenChange = (open: boolean) => {
+    setIsOpen(open);
+    if (!open) {
+      setAdvice(null);
+    }
+  }
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button>
           <BrainCircuit className="mr-2 h-4 w-4" />
@@ -150,8 +179,8 @@ export function FinancialAdviceModal() {
         )}
         {advice && (
           <>
-            <ScrollArea className="max-h-[400px] p-4 bg-slate-50 rounded-md border">
-                <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: advice.replace(/\n/g, '<br />') }}></div>
+            <ScrollArea className="max-h-[400px] p-4 bg-slate-50 rounded-md border dark:bg-slate-900">
+                <div className="prose prose-sm max-w-none dark:prose-invert" dangerouslySetInnerHTML={{ __html: advice }}></div>
             </ScrollArea>
              <DialogFooter>
               <Button onClick={() => { setAdvice(null); }}>Gerar Nova Consultoria</Button>
