@@ -8,26 +8,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { formatCurrency, formatPercentage } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { SimulatorData } from '@/types';
 
-export function FinancingSimulator() {
-  const { simulatorData, setSimulatorData } = useFinancialData();
-
-  const handleInputChange = (field: keyof typeof simulatorData, value: string | number | boolean) => {
-    setSimulatorData(prev => ({ ...prev, [field]: value }));
-  };
-
-  const handleCheckboxChange = (parcela: number, checked: boolean) => {
-    setSimulatorData(prev => ({
-      ...prev,
-      parcelasPagas: {
-        ...prev.parcelasPagas,
-        [parcela]: checked,
-      },
-    }));
-  };
-
-  const results = useMemo(() => {
-    const { preco, entradaPct, parcelas, taxaAnual, amortizacao, rendaA, rendaB, gastosA, gastosB } = simulatorData;
+function calculateFinancing(simulatorData: SimulatorData) {
+    const { preco, entradaPct, parcelas, taxaAnual, amortizacao } = simulatorData;
     
     const valorEntrada = preco * (entradaPct / 100);
     const valorFinanciado = preco - valorEntrada;
@@ -35,20 +19,17 @@ export function FinancingSimulator() {
 
     const taxaMensal = (Math.pow(1 + taxaAnual / 100, 1 / 12) - 1) * 100;
     const parcelaSemJuros = valorFinanciado / parcelas;
-    const rendaTotal = rendaA + rendaB;
-    const percentualA = rendaTotal > 0 ? (rendaA / rendaTotal) * 100 : 0;
-    const percentualB = rendaTotal > 0 ? (rendaB / rendaTotal) * 100 : 0;
 
-    let saldoDevedor = valorFinanciado;
+    let saldoDevedorAmortizado = valorFinanciado;
     let mesesComAmortizacao = 0;
     let totalPagoComAmortizacao = 0;
 
-    while (saldoDevedor > 0.01 && mesesComAmortizacao < parcelas * 2) {
-      const juros = saldoDevedor * (taxaMensal / 100);
+    while (saldoDevedorAmortizado > 0.01 && mesesComAmortizacao < parcelas * 2) {
+      const juros = saldoDevedorAmortizado * (taxaMensal / 100);
       const prestacao = parcelaSemJuros + juros;
       totalPagoComAmortizacao += prestacao;
       const amortizacaoTotal = parcelaSemJuros + (amortizacao || 0);
-      saldoDevedor -= amortizacaoTotal;
+      saldoDevedorAmortizado -= amortizacaoTotal;
       mesesComAmortizacao++;
     }
 
@@ -68,9 +49,7 @@ export function FinancingSimulator() {
         saldoDevedor: saldo,
         amortizacao: parcelaSemJuros,
         juros,
-        prestacao,
-        parteA: prestacao * (percentualA / 100),
-        parteB: prestacao * (percentualB / 100),
+        prestacao
       });
       saldo -= parcelaSemJuros;
     }
@@ -80,17 +59,34 @@ export function FinancingSimulator() {
     const custoRealNormal = totalPagoNormal - valorFinanciado;
     const custoRealAmortizado = totalPagoComAmortizacao - valorFinanciado;
 
-    const visibleRows = tabela.filter(row => row.parcela <= 24 || (row.parcela > mesesComAmortizacao - 3 && row.parcela <= parcelas));
-
     return {
       valorEntrada, valorFinanciado, taxaMensal, parcelaSemJuros, primeiraPrestacao,
-      percentualA, percentualB,
       tempoNormal: parcelas, tempoComAmort: mesesComAmortizacao, economiaTempo,
       totalPagoNormal, custoRealNormal, totalPagoComAmortizacao, custoRealAmortizado,
-      tabela,
-      visibleRows
+      tabela
     };
-  }, [simulatorData]);
+}
+
+
+export function FinancingSimulator() {
+  const { simulatorData, setSimulatorData } = useFinancialData();
+  const { nomeA, nomeB, rendaA, rendaB, gastosA, gastosB, amortizacao, parcelasPagas } = simulatorData;
+
+  const handleInputChange = (field: keyof typeof simulatorData, value: string | number | boolean) => {
+    setSimulatorData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleCheckboxChange = (parcela: number, checked: boolean) => {
+    setSimulatorData(prev => ({
+      ...prev,
+      parcelasPagas: {
+        ...prev.parcelasPagas,
+        [parcela]: checked,
+      },
+    }));
+  };
+
+  const results = useMemo(() => calculateFinancing(simulatorData), [simulatorData]);
 
   if (!results) {
     return (
@@ -111,8 +107,11 @@ export function FinancingSimulator() {
     )
   }
 
-  const { nomeA, nomeB, rendaA, rendaB, gastosA, gastosB, amortizacao, parcelasPagas } = simulatorData;
-  const { valorEntrada, valorFinanciado, taxaMensal, primeiraPrestacao, percentualA, percentualB, tempoNormal, tempoComAmort, economiaTempo, custoRealNormal, custoRealAmortizado, visibleRows } = results;
+  const { valorEntrada, valorFinanciado, taxaMensal, primeiraPrestacao, tempoNormal, tempoComAmort, economiaTempo, custoRealNormal, custoRealAmortizado, tabela } = results;
+
+  const rendaTotal = rendaA + rendaB;
+  const percentualA = rendaTotal > 0 ? (rendaA / rendaTotal) * 100 : 0;
+  const percentualB = rendaTotal > 0 ? (rendaB / rendaTotal) * 100 : 0;
 
   const prestacaoA = primeiraPrestacao * (percentualA / 100);
   const prestacaoB = primeiraPrestacao * (percentualB / 100);
@@ -123,6 +122,8 @@ export function FinancingSimulator() {
   const sobraA = rendaA - gastosA - totalMensalA;
   const sobraB = rendaB - gastosB - totalMensalB;
   
+  const visibleRows = tabela.filter(row => row.parcela <= 24 || (row.parcela > tempoComAmort - 3 && row.parcela <= tempoNormal));
+
   return (
     <div className="space-y-6">
       <Card>
@@ -163,17 +164,21 @@ export function FinancingSimulator() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {visibleRows.map((row, index) => (
-                  <React.Fragment key={row.parcela}>
-                   {index === 24 && tempoComAmort > 27 && (
-                     <TableRow><TableCell colSpan={8} className="text-center">...</TableCell></TableRow>
-                   )}
-                  <TableRow className={row.parcela <= tempoComAmort && (amortizacao || 0) > 0 ? "bg-amber-50" : ""}>
-                    <TableCell><Checkbox checked={parcelasPagas[row.parcela] || false} onCheckedChange={(checked) => handleCheckboxChange(row.parcela, !!checked)} /></TableCell>
-                    <TableCell>{row.parcela}</TableCell><TableCell>{formatCurrency(row.saldoDevedor)}</TableCell><TableCell>{formatCurrency(row.amortizacao)}</TableCell><TableCell>{formatCurrency(row.juros)}</TableCell><TableCell>{formatCurrency(row.prestacao)}</TableCell><TableCell>{formatCurrency(row.parteA)}</TableCell><TableCell>{formatCurrency(row.parteB)}</TableCell>
-                  </TableRow>
-                  </React.Fragment>
-                ))}
+                {visibleRows.map((row, index) => {
+                  const parteA = row.prestacao * (percentualA / 100);
+                  const parteB = row.prestacao * (percentualB / 100);
+                  return (
+                    <React.Fragment key={row.parcela}>
+                     {index === 24 && tempoComAmort > 27 && (
+                       <TableRow><TableCell colSpan={8} className="text-center">...</TableCell></TableRow>
+                     )}
+                    <TableRow className={row.parcela <= tempoComAmort && (amortizacao || 0) > 0 ? "bg-amber-50" : ""}>
+                      <TableCell><Checkbox checked={parcelasPagas[row.parcela] || false} onCheckedChange={(checked) => handleCheckboxChange(row.parcela, !!checked)} /></TableCell>
+                      <TableCell>{row.parcela}</TableCell><TableCell>{formatCurrency(row.saldoDevedor)}</TableCell><TableCell>{formatCurrency(row.amortizacao)}</TableCell><TableCell>{formatCurrency(row.juros)}</TableCell><TableCell>{formatCurrency(row.prestacao)}</TableCell><TableCell>{formatCurrency(parteA)}</TableCell><TableCell>{formatCurrency(parteB)}</TableCell>
+                    </TableRow>
+                    </React.Fragment>
+                  );
+                })}
               </TableBody>
             </Table>
           </ScrollArea>
