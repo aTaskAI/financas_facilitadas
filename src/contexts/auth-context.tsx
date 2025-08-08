@@ -26,8 +26,6 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   signInWithGoogle: () => void;
-  signInWithEmailPassword?: (email: string, password: string) => Promise<void>;
-  signUpWithEmailPassword?: (email: string, password: string, displayName: string) => Promise<void>;
   logout: () => void;
   updateUserProfile?: (displayName: string, photo?: File | null) => Promise<void>;
   updateUserPassword?: (newPassword: string) => Promise<void>;
@@ -100,45 +98,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const signInWithEmailPassword = async (email: string, password: string) => {
-    if (!isFirebaseConfigured) {
-      setUser(mockUser);
-      return;
-    }
-    setLoading(true);
-    try {
-      await signInWithEmailAndPassword(auth, email, password);
-    } catch (error: any) {
-        setLoading(false);
-        if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
-            throw new Error('E-mail ou senha inválidos.');
-        }
-        throw new Error('Ocorreu um erro desconhecido.');
-    }
-  };
-
-  const signUpWithEmailPassword = async (email: string, password: string, displayName: string) => {
-    if (!isFirebaseConfigured) {
-        setUser({...mockUser, displayName, email});
-        return;
-    }
-    setLoading(true);
-    try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      await updateProfile(userCredential.user, { displayName });
-      // Reload user to get the new displayName
-      await userCredential.user.reload();
-      setUser(auth.currentUser);
-    } catch (error: any) {
-        setLoading(false);
-        if (error.code === 'auth/email-already-in-use') {
-            throw new Error('Este e-mail já está em uso.');
-        }
-        throw new Error('Ocorreu um erro ao criar a conta.');
-    }
-  };
-
-
   const logout = async () => {
      if (!isFirebaseConfigured) {
       setUser(null);
@@ -153,8 +112,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const updateUserProfile = async (displayName: string, photo?: File | null) => {
-    const currentUser = auth.currentUser;
-    if (!currentUser) throw new Error("Usuário não autenticado.");
+    if (!auth.currentUser) throw new Error("Usuário não autenticado.");
     if (!isFirebaseConfigured) {
         const updatedUser = {...user, displayName: displayName} as User;
         if(photo) {
@@ -164,6 +122,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
     }
 
+    const currentUser = auth.currentUser;
     let photoURL = currentUser.photoURL;
     if (photo) {
       const storage = getStorage();
@@ -204,8 +163,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     user,
     loading,
     signInWithGoogle,
-    signInWithEmailPassword,
-    signUpWithEmailPassword,
     logout,
     updateUserProfile,
     updateUserPassword,
