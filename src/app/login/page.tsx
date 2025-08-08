@@ -8,24 +8,33 @@ import {
   GoogleAuthProvider,
   signInWithPopup,
 } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { auth, isFirebaseConfigured } from '@/lib/firebase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { PiggyBank, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/use-auth';
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState('mock@example.com');
+  const [password, setPassword] = useState('password');
   const [isLogin, setIsLogin] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
+  const { login: mockLogin } = useAuth() as any;
+
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isFirebaseConfigured) {
+      // For mock environment, just proceed
+       if(mockLogin) mockLogin(email, password);
+      router.push('/');
+      return;
+    }
     setIsLoading(true);
     try {
       if (isLogin) {
@@ -51,6 +60,10 @@ export default function LoginPage() {
   };
   
   const handleGoogleSignIn = async () => {
+    if (!isFirebaseConfigured) {
+      router.push('/');
+      return;
+    }
     setIsLoading(true);
     const provider = new GoogleAuthProvider();
     try {

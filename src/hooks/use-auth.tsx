@@ -14,7 +14,7 @@ import {
   signOut as firebaseSignOut,
 } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { auth, db } from '@/lib/firebase';
+import { auth, db, isFirebaseConfigured } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
 
 interface UserData {
@@ -42,10 +42,7 @@ const useMockAuth = () => {
         displayName: 'Mock User',
         photoURL: 'https://placehold.co/100x100.png',
     } as User);
-    const [userData, setUserData] = useState<UserData | null>({
-        nome: 'Mock User',
-        renda: 5000,
-    });
+    const [userData, setUserData] = useState<UserData | null>(null);
     const [loading, setLoading] = useState(false);
     const router = useRouter();
 
@@ -58,6 +55,13 @@ const useMockAuth = () => {
     const updateUserData = async (data: Partial<UserData>) => {
         setUserData(prev => ({...prev, ...data} as UserData));
     };
+    
+     useEffect(() => {
+      if(user && !userData) {
+        // router.push('/welcome');
+      }
+    }, [user, userData, router])
+
 
     return { user, userData, loading, logout, updateUserData };
 }
@@ -67,8 +71,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [userData, setUserData] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
-
-  const isFirebaseConfigured = process.env.NEXT_PUBLIC_FIREBASE_API_KEY && process.env.NEXT_PUBLIC_FIREBASE_API_KEY !== 'SUA_API_KEY_AQUI';
 
   const mockAuth = useMockAuth();
 
@@ -107,7 +109,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     return () => unsubscribe();
-  }, [router, isFirebaseConfigured]);
+  }, [router]);
 
   const logout = async () => {
     try {

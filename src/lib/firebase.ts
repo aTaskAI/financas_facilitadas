@@ -12,15 +12,17 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
+const isFirebaseConfigured = firebaseConfig.apiKey && firebaseConfig.apiKey !== "SUA_API_KEY_AQUI";
+
 // A simple check to see if the env vars are set.
-if (!firebaseConfig.apiKey || firebaseConfig.apiKey === "SUA_API_KEY_AQUI") {
-    console.error("Firebase config is not set. Please create a .env.local file and add your Firebase credentials.");
+if (process.env.NODE_ENV === 'development' && !isFirebaseConfigured) {
+    console.info("Firebase config is not set. Using mock auth in development.");
 }
 
 
 // Initialize Firebase
-const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
-const auth = getAuth(app);
-const db = getFirestore(app);
+const app = isFirebaseConfigured && !getApps().length ? initializeApp(firebaseConfig) : (getApps().length ? getApp() : null);
+const auth = app ? getAuth(app) : ({} as any);
+const db = app ? getFirestore(app) : ({} as any);
 
-export { app, auth, db };
+export { app, auth, db, isFirebaseConfigured };
