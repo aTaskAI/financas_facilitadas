@@ -1,26 +1,57 @@
 'use client';
 
+import { useAuth } from '@/hooks/use-auth';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 import { FinancialDataProvider } from '@/contexts/financial-data-context';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FinancingSimulator } from '@/components/tabs/financing-simulator';
 import { ExpenseTracker } from '@/components/tabs/expense-tracker';
 import { CouplesFinance } from '@/components/tabs/couples-finance';
 import { LoansTracker } from '@/components/tabs/loans-tracker';
-import { Landmark, Users, HandCoins, PiggyBank, BrainCircuit } from 'lucide-react';
+import { Landmark, Users, HandCoins, PiggyBank, BrainCircuit, User, LogOut } from 'lucide-react';
 import { FinancialAdviceModal } from '@/components/ai/financial-advice-modal';
+import { Button } from '@/components/ui/button';
 
 export default function Home() {
+  const { user, loading, logout } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push('/login');
+    }
+  }, [user, loading, router]);
+
+  if (loading || !user) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center">
+        <PiggyBank className="h-12 w-12 animate-bounce text-primary" />
+      </div>
+    );
+  }
+
   return (
     <FinancialDataProvider>
       <div className="container mx-auto p-4 sm:p-6 lg:p-8">
-        <header className="flex flex-col sm:flex-row justify-between items-center mb-6">
-          <div className="flex items-center gap-3 mb-4 sm:mb-0">
+        <header className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
+          <div className="flex items-center gap-3">
             <PiggyBank className="h-10 w-10 text-primary" />
             <h1 className="text-3xl font-bold font-headline text-slate-800">
               Finanças Simplificadas
             </h1>
           </div>
-          <FinancialAdviceModal />
+          <div className="flex items-center gap-2">
+            <FinancialAdviceModal />
+            <Button variant="outline" onClick={() => router.push('/profile')}>
+              <User className="mr-2 h-4 w-4" />
+              Perfil
+            </Button>
+            <Button variant="ghost" onClick={logout}>
+              <LogOut className="mr-2 h-4 w-4" />
+              Sair
+            </Button>
+          </div>
         </header>
 
         <Tabs defaultValue="simulator" className="w-full">
