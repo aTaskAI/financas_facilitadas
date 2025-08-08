@@ -18,12 +18,15 @@ import { getPersonalizedFinancialAdvice, PersonalizedFinancialAdviceInput } from
 import { BrainCircuit, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from '../ui/scroll-area';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger, SheetFooter } from '../ui/sheet';
 
 export function FinancialAdviceModal() {
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [advice, setAdvice] = useState<string | null>(null);
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   
   const [financialGoals, setFinancialGoals] = useState('');
   const [spendingPatterns, setSpendingPatterns] = useState('');
@@ -125,13 +128,95 @@ export function FinancialAdviceModal() {
     }
   }
 
+  const renderContent = () => (
+    <>
+      {!advice && (
+         <form onSubmit={onSubmit} className="space-y-4 px-4 sm:px-0">
+          <div>
+            <Label htmlFor="financialGoals">Metas Financeiras</Label>
+            <Textarea 
+              id="financialGoals" 
+              placeholder="Ex: Quitar o financiamento em 10 anos, fazer uma viagem internacional, aposentar aos 50 anos..." 
+              className="mt-1"
+              value={financialGoals}
+              onChange={e => setFinancialGoals(e.target.value)}
+            />
+            {errors.financialGoals && <p className="text-red-500 text-sm mt-1">{errors.financialGoals}</p>}
+          </div>
+          <div>
+            <Label htmlFor="spendingPatterns">Padrões de Gastos</Label>
+            <Textarea 
+              id="spendingPatterns" 
+              placeholder="Ex: Gasto muito com delivery nos finais de semana, costumo comprar roupas por impulso, etc." 
+              className="mt-1"
+              value={spendingPatterns}
+              onChange={e => setSpendingPatterns(e.target.value)}
+            />
+            {errors.spendingPatterns && <p className="text-red-500 text-sm mt-1">{errors.spendingPatterns}</p>}
+          </div>
+           <SheetFooter className="pt-4 px-4 sm:px-0"><DialogFooter>
+            <Button type="submit" disabled={isLoading} className="w-full">
+              {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <BrainCircuit className="mr-2 h-4 w-4" />}
+              Obter Consultoria
+            </Button>
+          </DialogFooter></SheetFooter>
+        </form>
+      )}
+      {isLoading && !advice && (
+        <div className="flex justify-center items-center p-8">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="ml-4">Analisando suas finanças...</p>
+        </div>
+      )}
+      {advice && (
+        <>
+          <ScrollArea className="max-h-[60vh] p-4 bg-slate-50 rounded-md border dark:bg-slate-900">
+              <div className="prose prose-sm max-w-none dark:prose-invert" dangerouslySetInnerHTML={{ __html: advice }}></div>
+          </ScrollArea>
+           <SheetFooter className="px-4 sm:px-0"><DialogFooter>
+            <Button onClick={() => { setAdvice(null); }}>Gerar Nova Consultoria</Button>
+          </DialogFooter></SheetFooter>
+        </>
+      )}
+    </>
+  )
+  
+  const triggerButton = isMobile ? (
+    <Button size="icon" className="rounded-full h-14 w-14 shadow-lg">
+      <BrainCircuit className="h-6 w-6" />
+    </Button>
+  ) : (
+    <Button>
+      <BrainCircuit className="mr-2 h-4 w-4" />
+      Consultoria com IA
+    </Button>
+  );
+
+  if (isMobile) {
+    return (
+      <Sheet open={isOpen} onOpenChange={handleOpenChange}>
+        <SheetTrigger asChild>
+          {triggerButton}
+        </SheetTrigger>
+        <SheetContent side="bottom" className="rounded-t-lg">
+          <SheetHeader className="px-4 sm:px-0">
+            <SheetTitle>Consultoria Financeira com IA</SheetTitle>
+            <SheetDescription>
+              Receba dicas personalizadas para melhorar sua saúde financeira. Preencha os campos abaixo para que a IA possa entender seu contexto.
+            </SheetDescription>
+          </SheetHeader>
+          <div className="py-4">
+            {renderContent()}
+          </div>
+        </SheetContent>
+      </Sheet>
+    )
+  }
+
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        <Button>
-          <BrainCircuit className="mr-2 h-4 w-4" />
-          Consultoria com IA
-        </Button>
+        {triggerButton}
       </DialogTrigger>
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
@@ -140,54 +225,7 @@ export function FinancialAdviceModal() {
             Receba dicas personalizadas para melhorar sua saúde financeira. Preencha os campos abaixo para que a IA possa entender seu contexto.
           </DialogDescription>
         </DialogHeader>
-        {!advice && (
-           <form onSubmit={onSubmit} className="space-y-4">
-            <div>
-              <Label htmlFor="financialGoals">Metas Financeiras</Label>
-              <Textarea 
-                id="financialGoals" 
-                placeholder="Ex: Quitar o financiamento em 10 anos, fazer uma viagem internacional, aposentar aos 50 anos..." 
-                className="mt-1"
-                value={financialGoals}
-                onChange={e => setFinancialGoals(e.target.value)}
-              />
-              {errors.financialGoals && <p className="text-red-500 text-sm mt-1">{errors.financialGoals}</p>}
-            </div>
-            <div>
-              <Label htmlFor="spendingPatterns">Padrões de Gastos</Label>
-              <Textarea 
-                id="spendingPatterns" 
-                placeholder="Ex: Gasto muito com delivery nos finais de semana, costumo comprar roupas por impulso, etc." 
-                className="mt-1"
-                value={spendingPatterns}
-                onChange={e => setSpendingPatterns(e.target.value)}
-              />
-              {errors.spendingPatterns && <p className="text-red-500 text-sm mt-1">{errors.spendingPatterns}</p>}
-            </div>
-             <DialogFooter>
-              <Button type="submit" disabled={isLoading}>
-                {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <BrainCircuit className="mr-2 h-4 w-4" />}
-                Obter Consultoria
-              </Button>
-            </DialogFooter>
-          </form>
-        )}
-        {isLoading && !advice && (
-          <div className="flex justify-center items-center p-8">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <p className="ml-4">Analisando suas finanças...</p>
-          </div>
-        )}
-        {advice && (
-          <>
-            <ScrollArea className="max-h-[400px] p-4 bg-slate-50 rounded-md border dark:bg-slate-900">
-                <div className="prose prose-sm max-w-none dark:prose-invert" dangerouslySetInnerHTML={{ __html: advice }}></div>
-            </ScrollArea>
-             <DialogFooter>
-              <Button onClick={() => { setAdvice(null); }}>Gerar Nova Consultoria</Button>
-            </DialogFooter>
-          </>
-        )}
+        {renderContent()}
       </DialogContent>
     </Dialog>
   );

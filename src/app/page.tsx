@@ -102,7 +102,7 @@ export default function Home() {
             </h1>
           </div>
           <div className="flex items-center gap-2">
-            <FinancialAdviceModal />
+            {!isMobile && <FinancialAdviceModal />}
             <UserNav />
           </div>
         </header>
@@ -131,6 +131,12 @@ export default function Home() {
           </TabsContent>
         </Tabs>
       </div>
+
+       {isMobile && (
+        <div className="fixed bottom-6 right-6 z-50">
+          <FinancialAdviceModal />
+        </div>
+      )}
     </FinancialDataProvider>
   );
 }
