@@ -39,8 +39,6 @@ export function ExpenseTracker() {
 
   const currentMonthData = getSafeMonthData();
 
-  const [draggedItem, setDraggedItem] = useState<{ id: number, categoria: Categoria } | null>(null);
-
   const handleSubTabChange = (id: string) => {
     setExpenseData(prev => ({ ...prev, currentSubTabId: id }));
   };
@@ -119,42 +117,6 @@ export function ExpenseTracker() {
     updateMonthData(categoria, newItems);
   };
 
-  const handleDragStart = (e: React.DragEvent<HTMLDivElement>, id: number, categoria: Categoria) => {
-    setDraggedItem({ id, categoria });
-    e.dataTransfer.effectAllowed = 'move';
-  };
-
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>, targetCategoria: Categoria) => {
-    e.preventDefault();
-    if (!draggedItem) return;
-
-    const { id, categoria: sourceCategoria } = draggedItem;
-    if (sourceCategoria === targetCategoria) return;
-
-    setExpenseData(prev => {
-      const newState = cloneDeep(prev);
-      const dataForMonth = newState.subTabs[newState.currentSubTabId].data[newState.year]?.[newState.month];
-
-      if(!dataForMonth) return prev;
-
-      const sourceItems = dataForMonth[sourceCategoria];
-      const itemToMove = sourceItems.find(item => item.id === id);
-
-      if (!itemToMove) return prev; 
-
-      dataForMonth[sourceCategoria] = sourceItems.filter(item => item.id !== id);
-      dataForMonth[targetCategoria].push(itemToMove);
-      
-      return newState;
-    });
-
-    setDraggedItem(null);
-  };
-
-  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-  };
-
   const totalReceitas = currentMonthData.receitas.reduce((acc, item) => acc + item.valor, 0);
   const totalDespesas = [...currentMonthData.essenciais, ...currentMonthData.naoEssenciais].reduce((acc, item) => acc + item.valor, 0);
   const saldo = totalReceitas - totalDespesas;
@@ -168,17 +130,11 @@ export function ExpenseTracker() {
       <CardHeader>
           <CardTitle className="flex items-center gap-2">{icon} {title}</CardTitle>
       </CardHeader>
-      <CardContent 
-        className="space-y-2 flex-grow min-h-[100px] p-4" 
-        onDrop={(e) => handleDrop(e, categoria)} 
-        onDragOver={handleDragOver}
-      >
+      <CardContent className="space-y-2 flex-grow min-h-[100px] p-4">
           {currentMonthData[categoria].map(item => (
           <div 
               key={item.id} 
-              draggable 
-              onDragStart={(e) => handleDragStart(e, item.id, categoria)} 
-              className="flex gap-2 items-center p-2 rounded-md hover:bg-slate-100 cursor-move"
+              className="flex gap-2 items-center p-2 rounded-md hover:bg-slate-100"
           >
               <Input value={item.nome} onChange={e => handleItemChange(categoria, item.id, 'nome', e.target.value)} placeholder="Descrição" />
               <Input type="number" value={item.valor} onChange={e => handleItemChange(categoria, item.id, 'valor', Number(e.target.value))} className="w-32" placeholder="Valor" />
@@ -186,7 +142,6 @@ export function ExpenseTracker() {
                 variant="ghost" 
                 size="icon" 
                 onClick={() => removeItem(categoria, item.id)}
-                onMouseDown={(e) => e.stopPropagation()}
               >
                 <Trash2 className="h-4 w-4 text-red-500" />
               </Button>
