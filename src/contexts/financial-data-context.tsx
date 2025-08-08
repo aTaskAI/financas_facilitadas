@@ -1,9 +1,8 @@
 'use client';
 
-import { createContext, useContext, ReactNode, Dispatch, SetStateAction, useEffect, useCallback } from 'react';
+import { createContext, useContext, ReactNode, Dispatch, SetStateAction, useCallback } from 'react';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import type { SimulatorData, ExpenseData, CouplesData, Loan } from '@/types';
-import { useAuth } from '@/hooks/use-auth';
 import { isEqual } from 'lodash';
 
 
@@ -26,19 +25,14 @@ const initialExpenseData: ExpenseData = {
   subTabs: {
     'default': {
       nome: 'Pessoa A',
-      data: {
-        [new Date().getFullYear()]: {
-          receitas: Array(12).fill([]).map(() => []),
-          essenciais: Array(12).fill([]).map(() => []),
-          naoEssenciais: Array(12).fill([]).map(() => []),
-        }
-      }
+      data: {}
     }
   },
   currentSubTabId: 'default',
   year: new Date().getFullYear(),
   month: new Date().getMonth(),
 };
+
 
 const initialCouplesData: CouplesData = {
   year: new Date().getFullYear(),
@@ -88,61 +82,12 @@ function useStableLocalStorage<T>(key: string, initialValue: T): [T, Dispatch<Se
 
 
 export function FinancialDataProvider({ children }: { children: ReactNode }) {
-  const { user, userData } = useAuth();
-  const uid = user?.uid || 'guest';
+  const uid = 'guest';
 
   const [simulatorData, setSimulatorData] = useStableLocalStorage<SimulatorData>(`fin-sim-data_${uid}`, initialSimulatorData);
   const [expenseData, setExpenseData] = useStableLocalStorage<ExpenseData>(`fin-expense-data_${uid}`, initialExpenseData);
   const [couplesData, setCouplesData] = useStableLocalStorage<CouplesData>(`fin-couples-data_${uid}`, initialCouplesData);
   const [loans, setLoans] = useStableLocalStorage<Loan[]>(`fin-loans-data_${uid}`, []);
-
-  useEffect(() => {
-    if (userData) {
-      const updateData = (isInitial: boolean) => {
-        setSimulatorData(prev => ({
-          ...prev,
-          nomeA: userData.nome || prev.nomeA,
-          rendaA: userData.renda || prev.rendaA,
-          nomeB: userData.nomeConjuge || prev.nomeB,
-          rendaB: userData.rendaConjuge || prev.rendaB,
-        }));
-        
-        setCouplesData(prev => {
-            const newYearData = { ...prev.yearData };
-            if (!newYearData[prev.year]) {
-                newYearData[prev.year] = {};
-            }
-            const currentMonthData = newYearData[prev.year][prev.month] || {};
-            newYearData[prev.year][prev.month] = {
-                ...currentMonthData,
-                nomeA: userData.nome || currentMonthData.nomeA,
-                rendaA: userData.renda || currentMonthData.rendaA,
-                nomeB: userData.nomeConjuge || currentMonthData.nomeB,
-                rendaB: userData.rendaConjuge || currentMonthData.rendaB,
-            };
-            return { ...prev, yearData: newYearData };
-        });
-
-        setExpenseData(prev => {
-            const defaultTab = prev.subTabs['default'];
-            return {
-                ...prev,
-                subTabs: {
-                    ...prev.subTabs,
-                    'default': {
-                        ...defaultTab,
-                        nome: userData.nome || defaultTab.nome,
-                    }
-                }
-            }
-        });
-      };
-      
-      const item = window.localStorage.getItem(`fin-sim-data_${uid}`);
-      updateData(!item);
-
-    }
-  }, [userData, uid, setCouplesData, setExpenseData, setSimulatorData]);
 
 
   const value = {
