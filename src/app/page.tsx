@@ -34,8 +34,8 @@ export default function Home() {
 
   return (
     <FinancialDataProvider>
-      <div className="container mx-auto p-4 sm:p-6 lg:p-8">
-        <header className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
+      <div className="container mx-auto p-8">
+        <header className="flex justify-between items-center mb-6">
           <div className="flex items-center gap-3">
             <PiggyBank className="h-10 w-10 text-primary" />
             <h1 className="text-3xl font-bold font-headline text-slate-800">
@@ -49,24 +49,24 @@ export default function Home() {
         </header>
 
         <Tabs defaultValue="dashboard" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-5 h-auto md:h-12">
-            <TabsTrigger value="dashboard" className="py-2.5">
+          <TabsList className="grid w-full grid-cols-5">
+            <TabsTrigger value="dashboard">
               <LayoutDashboard className="h-4 w-4 mr-2" />
               Dashboard
             </TabsTrigger>
-            <TabsTrigger value="simulator" className="py-2.5">
+            <TabsTrigger value="simulator">
               <Landmark className="h-4 w-4 mr-2" />
               Financiamento
             </TabsTrigger>
-            <TabsTrigger value="expenses" className="py-2.5">
+            <TabsTrigger value="expenses">
               <HandCoins className="h-4 w-4 mr-2" />
               Meus Gastos
             </TabsTrigger>
-            <TabsTrigger value="couple" className="py-2.5">
+            <TabsTrigger value="couple">
               <Users className="h-4 w-4 mr-2" />
               Controle do Casal
             </TabsTrigger>
-            <TabsTrigger value="loans" className="py-2.5">
+            <TabsTrigger value="loans">
               <Landmark className="h-4 w-4 mr-2" />
               Empréstimos
             </TabsTrigger>

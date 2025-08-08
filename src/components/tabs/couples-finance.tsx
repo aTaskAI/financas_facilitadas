@@ -65,9 +65,9 @@ export function CouplesFinance() {
         <CardHeader>
           <CardTitle>Configuração Mensal</CardTitle>
         </CardHeader>
-        <CardContent className="flex flex-col sm:flex-row gap-4 items-center">
+        <CardContent className="flex gap-4 items-center">
             <Select value={String(month)} onValueChange={(val) => setCouplesData({ ...couplesData, month: Number(val) })}>
-              <SelectTrigger className="w-full sm:w-[180px]">
+              <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Mês" />
               </SelectTrigger>
               <SelectContent>
@@ -75,7 +75,7 @@ export function CouplesFinance() {
               </SelectContent>
             </Select>
              <Select value={String(year)} onValueChange={(val) => setCouplesData({ ...couplesData, year: Number(val) })}>
-              <SelectTrigger className="w-full sm:w-[120px]">
+              <SelectTrigger className="w-[120px]">
                 <SelectValue placeholder="Ano" />
               </SelectTrigger>
               <SelectContent>

@@ -74,18 +74,19 @@ export function DashboardTab() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold">Dashboard</h2>
         <div className="flex items-center gap-2">
-            <Button variant="outline" size="icon" onClick={() => handleMonthChange('prev')} className="h-8 w-8"><ChevronLeft className="h-4 w-4" /></Button>
-            <h2 className="text-xl font-bold w-32 text-center">{meses[month]} de {year}</h2>
-            <Button variant="outline" size="icon" onClick={() => handleMonthChange('next')} className="h-8 w-8"><ChevronRight className="h-4 w-4" /></Button>
+            <Button variant="outline" size="icon" onClick={() => handleMonthChange('prev')}><ChevronLeft className="h-4 w-4" /></Button>
+            <span className="text-lg font-semibold w-32 text-center">{meses[month]} de {year}</span>
+            <Button variant="outline" size="icon" onClick={() => handleMonthChange('next')}><ChevronRight className="h-4 w-4" /></Button>
         </div>
       </div>
         
        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Resultado do Mês</CardTitle>
+                    <CardTitle className="text-sm font-medium">Resultado do Período</CardTitle>
                     <DollarSign className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
@@ -118,14 +119,14 @@ export function DashboardTab() {
         </div>
         
         <Tabs defaultValue="evolution" className="w-full">
-            <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2">
+            <TabsList>
                 <TabsTrigger value="evolution"><BarChart className="mr-2 h-4 w-4" /> Evolução no Ano</TabsTrigger>
                 <TabsTrigger value="category"><PieChart className="mr-2 h-4 w-4" /> Despesas por Categoria</TabsTrigger>
             </TabsList>
-            <TabsContent value="evolution" className="mt-4">
+            <TabsContent value="evolution">
                 <MonthlySpendingChart data={allMonthsData} />
             </TabsContent>
-            <TabsContent value="category" className="mt-4">
+            <TabsContent value="category">
                 <SpendingDonutChart data={donutChartData} />
             </TabsContent>
         </Tabs>
