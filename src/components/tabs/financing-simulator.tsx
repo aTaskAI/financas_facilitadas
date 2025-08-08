@@ -80,12 +80,15 @@ export function FinancingSimulator() {
     const custoRealNormal = totalPagoNormal - valorFinanciado;
     const custoRealAmortizado = totalPagoComAmortizacao - valorFinanciado;
 
+    const visibleRows = tabela.filter(row => row.parcela <= 24 || (row.parcela > mesesComAmortizacao - 3 && row.parcela <= parcelas));
+
     return {
       valorEntrada, valorFinanciado, taxaMensal, parcelaSemJuros, primeiraPrestacao,
       percentualA, percentualB,
       tempoNormal: parcelas, tempoComAmort: mesesComAmortizacao, economiaTempo,
       totalPagoNormal, custoRealNormal, totalPagoComAmortizacao, custoRealAmortizado,
       tabela,
+      visibleRows
     };
   }, [simulatorData]);
 
@@ -109,7 +112,7 @@ export function FinancingSimulator() {
   }
 
   const { nomeA, nomeB, rendaA, rendaB, gastosA, gastosB, amortizacao, parcelasPagas } = simulatorData;
-  const { valorEntrada, valorFinanciado, taxaMensal, primeiraPrestacao, percentualA, percentualB, tempoNormal, tempoComAmort, economiaTempo, tabela, custoRealNormal, custoRealAmortizado } = results;
+  const { valorEntrada, valorFinanciado, taxaMensal, primeiraPrestacao, percentualA, percentualB, tempoNormal, tempoComAmort, economiaTempo, custoRealNormal, custoRealAmortizado, visibleRows } = results;
 
   const prestacaoA = primeiraPrestacao * (percentualA / 100);
   const prestacaoB = primeiraPrestacao * (percentualB / 100);
@@ -120,8 +123,6 @@ export function FinancingSimulator() {
   const sobraA = rendaA - gastosA - totalMensalA;
   const sobraB = rendaB - gastosB - totalMensalB;
   
-  const visibleRows = tabela.filter(row => row.parcela <= 24 || row.parcela > tempoComAmort - 3 && row.parcela <= tempoComAmort);
-
   return (
     <div className="space-y-6">
       <Card>
@@ -165,10 +166,10 @@ export function FinancingSimulator() {
                 {visibleRows.map((row, index) => (
                   <React.Fragment key={row.parcela}>
                    {index === 24 && tempoComAmort > 27 && (
-                     <TableRow key="separator"><TableCell colSpan={8} className="text-center">...</TableCell></TableRow>
+                     <TableRow><TableCell colSpan={8} className="text-center">...</TableCell></TableRow>
                    )}
                   <TableRow className={row.parcela <= tempoComAmort && (amortizacao || 0) > 0 ? "bg-amber-50" : ""}>
-                    <TableCell><Checkbox checked={parcelasPagas[row.parcela]} onCheckedChange={(checked) => handleCheckboxChange(row.parcela, !!checked)} /></TableCell>
+                    <TableCell><Checkbox checked={parcelasPagas[row.parcela] || false} onCheckedChange={(checked) => handleCheckboxChange(row.parcela, !!checked)} /></TableCell>
                     <TableCell>{row.parcela}</TableCell><TableCell>{formatCurrency(row.saldoDevedor)}</TableCell><TableCell>{formatCurrency(row.amortizacao)}</TableCell><TableCell>{formatCurrency(row.juros)}</TableCell><TableCell>{formatCurrency(row.prestacao)}</TableCell><TableCell>{formatCurrency(row.parteA)}</TableCell><TableCell>{formatCurrency(row.parteB)}</TableCell>
                   </TableRow>
                   </React.Fragment>
