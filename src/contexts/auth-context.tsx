@@ -116,7 +116,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const updateUserProfile = async (displayName: string, photo?: File | null) => {
     if (!auth.currentUser) throw new Error("Usuário não autenticado.");
     if (!isFirebaseConfigured) {
-        const updatedUser = {...mockUser, displayName: displayName};
+        const updatedUser = {...user, displayName: displayName} as User;
         if(photo) {
             updatedUser.photoURL = URL.createObjectURL(photo)
         }
@@ -133,7 +133,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     await updateProfile(auth.currentUser, { displayName, photoURL });
-    setUser(auth.currentUser); // Force state update
+    
+    // Create a new user object to force re-render
+    const updatedUser = {
+      ...auth.currentUser,
+      displayName,
+      photoURL
+    } as User;
+
+    setUser(updatedUser);
   };
   
   const updateUserPassword = async (newPassword: string) => {
@@ -163,8 +171,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     loading,
     signInWithGoogle,
     logout,
-    updateUserProfile: isFirebaseConfigured ? updateUserProfile : undefined,
-    updateUserPassword: isFirebaseConfigured ? updateUserPassword : undefined,
+    updateUserProfile,
+    updateUserPassword,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
