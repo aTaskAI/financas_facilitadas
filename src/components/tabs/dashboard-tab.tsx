@@ -66,10 +66,24 @@ export function DashboardTab() {
     };
   });
 
-  const donutChartData = [
-    { name: 'Essenciais', value: essenciais, fill: 'hsl(var(--destructive))' },
-    { name: 'Não Essenciais', value: naoEssenciais, fill: 'hsl(var(--accent))' }
-  ].filter(d => d.value > 0);
+  const allExpenses = [...currentMonthData.essenciais, ...currentMonthData.naoEssenciais];
+  const expensesByCategory = allExpenses.reduce((acc, expense) => {
+    const category = expense.categoria || 'Outros';
+    if (!acc[category]) {
+      acc[category] = 0;
+    }
+    acc[category] += expense.valor;
+    return acc;
+  }, {} as { [key: string]: number });
+
+  const chartColors = ['hsl(var(--chart-1))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 'hsl(var(--chart-4))', 'hsl(var(--chart-5))'];
+
+  const donutChartData = Object.entries(expensesByCategory).map(([name, value], index) => ({
+    name,
+    value,
+    fill: chartColors[index % chartColors.length],
+  })).filter(d => d.value > 0);
+
 
   const cashFlowChartData = meses.map((_, monthIndex) => {
     const monthData = currentPersonData?.[monthIndex] || { receitas: [], essenciais: [], naoEssenciais: [] };
