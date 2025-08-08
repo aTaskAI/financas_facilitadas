@@ -2,21 +2,36 @@
 
 import { useAuth } from '@/contexts/auth-context';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { FinancialDataProvider } from '@/contexts/financial-data-context';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FinancingSimulator } from '@/components/tabs/financing-simulator';
 import { ExpenseTracker } from '@/components/tabs/expense-tracker';
 import { CouplesFinance } from '@/components/tabs/couples-finance';
 import { LoansTracker } from '@/components/tabs/loans-tracker';
-import { Landmark, Users, HandCoins, PiggyBank, LayoutDashboard } from 'lucide-react';
+import { Landmark, Users, HandCoins, PiggyBank, LayoutDashboard, Menu } from 'lucide-react';
 import { FinancialAdviceModal } from '@/components/ai/financial-advice-modal';
 import { DashboardTab } from '@/components/tabs/dashboard-tab';
 import { UserNav } from '@/components/user-nav';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Button } from '@/components/ui/button';
+
+const navItems = [
+  { value: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { value: 'simulator', label: 'Financiamento', icon: Landmark },
+  { value: 'expenses', label: 'Meus Gastos', icon: HandCoins },
+  { value: 'couple', label: 'Controle do Casal', icon: Users },
+  { value: 'loans', label: 'Empréstimos', icon: Landmark },
+];
 
 export default function Home() {
   const { user, loading, logout } = useAuth();
   const router = useRouter();
+  const isMobile = useIsMobile();
+  const [activeTab, setActiveTab] = useState('dashboard');
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
+
 
   useEffect(() => {
     if (!loading && !user) {
@@ -32,13 +47,57 @@ export default function Home() {
     );
   }
 
+  const renderNav = () => {
+    if (isMobile) {
+      return (
+        <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+          <SheetTrigger asChild>
+            <Button variant="outline" size="icon">
+              <Menu className="h-6 w-6" />
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="left">
+            <div className="flex flex-col space-y-2 pt-8">
+              {navItems.map((item) => (
+                <Button
+                  key={item.value}
+                  variant={activeTab === item.value ? 'default' : 'ghost'}
+                  className="justify-start"
+                  onClick={() => {
+                    setActiveTab(item.value);
+                    setIsSheetOpen(false);
+                  }}
+                >
+                  <item.icon className="h-4 w-4 mr-2" />
+                  {item.label}
+                </Button>
+              ))}
+            </div>
+          </SheetContent>
+        </Sheet>
+      );
+    }
+
+    return (
+       <TabsList className="grid w-full max-w-4xl grid-cols-5">
+        {navItems.map((item) => (
+          <TabsTrigger key={item.value} value={item.value}>
+            <item.icon className="h-4 w-4 mr-2" />
+            {item.label}
+          </TabsTrigger>
+        ))}
+      </TabsList>
+    );
+  }
+
   return (
     <FinancialDataProvider>
-      <div className="container mx-auto p-8">
+      <div className="container mx-auto p-4 sm:p-8">
         <header className="flex justify-between items-center mb-6">
           <div className="flex items-center gap-3">
+             {isMobile && renderNav()}
             <PiggyBank className="h-10 w-10 text-primary" />
-            <h1 className="text-3xl font-bold font-headline text-slate-800">
+            <h1 className="text-xl sm:text-3xl font-bold font-headline text-slate-800">
               Finanças Simplificadas
             </h1>
           </div>
@@ -48,29 +107,13 @@ export default function Home() {
           </div>
         </header>
 
-        <Tabs defaultValue="dashboard" className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="dashboard">
-              <LayoutDashboard className="h-4 w-4 mr-2" />
-              Dashboard
-            </TabsTrigger>
-            <TabsTrigger value="simulator">
-              <Landmark className="h-4 w-4 mr-2" />
-              Financiamento
-            </TabsTrigger>
-            <TabsTrigger value="expenses">
-              <HandCoins className="h-4 w-4 mr-2" />
-              Meus Gastos
-            </TabsTrigger>
-            <TabsTrigger value="couple">
-              <Users className="h-4 w-4 mr-2" />
-              Controle do Casal
-            </TabsTrigger>
-            <TabsTrigger value="loans">
-              <Landmark className="h-4 w-4 mr-2" />
-              Empréstimos
-            </TabsTrigger>
-          </TabsList>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+         {!isMobile && (
+           <div className="flex justify-center">
+             {renderNav()}
+           </div>
+          )}
+          
           <TabsContent value="dashboard" className="mt-6">
             <DashboardTab />
           </TabsContent>
