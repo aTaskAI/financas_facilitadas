@@ -180,7 +180,7 @@ export function DashboardTab() {
          <Carousel className="w-full" opts={{ loop: false, align: "start" }}>
             <CarouselContent className="-ml-2">
               {chartCards.map((chart) => (
-                <CarouselItem key={chart.key} className="pl-2 md:basis-1/2 lg:basis-1/3">
+                <CarouselItem key={chart.key} className="pl-2">
                   <div className="p-1">{chart.content}</div>
                 </CarouselItem>
               ))}
@@ -201,7 +201,7 @@ export function DashboardTab() {
             ))}
           </TabsList>
            {chartCards.map(chart => (
-            <TabsContent key={chart.key} value={chart.key}>
+            <TabsContent key={chart.key} value={chart.key} className="mt-4">
               {chart.content}
             </TabsContent>
           ))}
