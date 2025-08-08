@@ -99,18 +99,16 @@ export default function Home() {
         <SidebarInset>
            <div className="container mx-auto p-4 sm:p-8">
             <header className="flex justify-between items-center mb-6">
+               <SidebarTrigger asChild>
+                  <Button variant="ghost" size="icon">
+                      <Menu />
+                  </Button>
+               </SidebarTrigger>
               <div className="flex items-center gap-3">
-                 <SidebarTrigger asChild>
-                    <Button variant="ghost" size="icon">
-                        <Menu />
-                    </Button>
-                 </SidebarTrigger>
-                <div className="flex items-center gap-3">
-                   <PiggyBank className="h-10 w-10 text-primary" />
-                    <h1 className="text-xl sm:text-3xl font-bold font-headline text-primary">
-                      Prospera
-                    </h1>
-                </div>
+                 <PiggyBank className="h-10 w-10 text-primary" />
+                  <h1 className="text-xl sm:text-3xl font-bold font-headline text-primary">
+                    Prospera
+                  </h1>
               </div>
               <div className="flex items-center gap-2">
                 {!isMobile && <FinancialAdviceModal />}
