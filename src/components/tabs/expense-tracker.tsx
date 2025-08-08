@@ -10,13 +10,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { SpendingChart } from '../charts/spending-chart';
 import { useState } from 'react';
 import { cloneDeep } from 'lodash';
-
+import { Badge } from '../ui/badge';
 
 type Categoria = 'receitas' | 'essenciais' | 'naoEssenciais';
+type ExpenseCategory = 'Moradia' | 'Transporte' | 'Alimentação' | 'Saúde' | 'Educação' | 'Contas' | 'Lazer' | 'Compras' | 'Restaurantes' | 'Viagens' | 'Assinaturas' | 'Outros';
+
+const categoriasEssenciais: ExpenseCategory[] = ['Moradia', 'Transporte', 'Alimentação', 'Saúde', 'Educação', 'Contas'];
+const categoriasNaoEssenciais: ExpenseCategory[] = ['Lazer', 'Compras', 'Restaurantes', 'Viagens', 'Assinaturas', 'Outros'];
+
 
 interface NewItemState {
   nome: string;
   valor: string;
+  categoria: string;
 }
 
 export function ExpenseTracker() {
@@ -80,18 +86,18 @@ export function ExpenseTracker() {
     });
   }
 
-  const handleItemChange = (categoria: Categoria, id: number, field: 'nome' | 'valor', value: string | number) => {
+  const handleItemChange = (categoria: Categoria, id: number, field: 'nome' | 'valor' | 'categoria', value: string | number) => {
     const newItems = currentMonthData[categoria].map(item =>
       item.id === id ? { ...item, [field]: value } : item
     );
     updateMonthData(categoria, newItems);
   };
   
-  const handleNewItemChange = (categoria: Categoria, field: 'nome' | 'valor', value: string) => {
+  const handleNewItemChange = (categoria: Categoria, field: 'nome' | 'valor' | 'categoria', value: string) => {
     setNewItem(prev => ({
         ...prev,
         [categoria]: {
-            ...(prev[categoria] || { nome: '', valor: '' }),
+            ...(prev[categoria] || { nome: '', valor: '', categoria: '' }),
             [field]: value
         }
     }));
@@ -99,8 +105,8 @@ export function ExpenseTracker() {
 
   const saveNewItem = (categoria: Categoria) => {
     const item = newItem[categoria];
-    if (item && item.nome && item.valor) {
-        const newItemData = { id: Date.now(), nome: item.nome, valor: Number(item.valor) };
+    if (item && item.nome && item.valor && (categoria === 'receitas' || item.categoria)) {
+        const newItemData = { id: Date.now(), nome: item.nome, valor: Number(item.valor), categoria: item.categoria };
         const newItems = [...currentMonthData[categoria], newItemData];
         updateMonthData(categoria, newItems);
         setNewItem(prev => {
@@ -125,7 +131,7 @@ export function ExpenseTracker() {
 
   const meses = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
 
-  const renderList = (categoria: Categoria, title: string, icon: React.ReactNode) => (
+  const renderList = (categoria: Categoria, title: string, icon: React.ReactNode, categoryList?: ExpenseCategory[]) => (
     <Card className="flex flex-col">
       <CardHeader>
           <CardTitle className="flex items-center gap-2">{icon} {title}</CardTitle>
@@ -137,6 +143,7 @@ export function ExpenseTracker() {
               className="flex gap-2 items-center p-2 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800"
           >
               <Input value={item.nome} onChange={e => handleItemChange(categoria, item.id, 'nome', e.target.value)} placeholder="Descrição" />
+              {item.categoria && <Badge variant="secondary">{item.categoria}</Badge>}
               <Input type="number" value={item.valor} onChange={e => handleItemChange(categoria, item.id, 'valor', Number(e.target.value))} className="w-32" placeholder="Valor" />
               <Button 
                 variant="ghost" 
@@ -155,6 +162,16 @@ export function ExpenseTracker() {
                         onChange={(e) => handleNewItemChange(categoria, 'nome', e.target.value)}
                         autoFocus
                     />
+                     {categoryList && (
+                       <Select onValueChange={(value) => handleNewItemChange(categoria, 'categoria', value)} value={newItem[categoria]?.categoria}>
+                        <SelectTrigger className="w-[180px]">
+                          <SelectValue placeholder="Categoria" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {categoryList.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    )}
                     <Input 
                         type="number" 
                         placeholder="Valor" 
@@ -169,7 +186,7 @@ export function ExpenseTracker() {
           )}
       </CardContent>
       <CardFooter>
-        <Button onClick={() => setNewItem(prev => ({...prev, [categoria]: {nome: '', valor: ''}}))} className="w-full">
+        <Button onClick={() => setNewItem(prev => ({...prev, [categoria]: {nome: '', valor: '', categoria: categoryList ? categoryList[0] : ''}}))} className="w-full">
             <PlusCircle className="mr-2 h-4 w-4" /> Adicionar
         </Button>
       </CardFooter>
@@ -209,8 +226,8 @@ export function ExpenseTracker() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {renderList('receitas', 'Receitas', <HandCoins className="text-green-500" />)}
-        {renderList('essenciais', 'Despesas Essenciais', <ReceiptText className="text-red-500" />)}
-        {renderList('naoEssenciais', 'Despesas Não Essenciais', <PiggyBank className="text-orange-500" />)}
+        {renderList('essenciais', 'Despesas Essenciais', <ReceiptText className="text-red-500" />, categoriasEssenciais)}
+        {renderList('naoEssenciais', 'Despesas Não Essenciais', <PiggyBank className="text-orange-500" />, categoriasNaoEssenciais)}
       </div>
 
       <SpendingChart data={chartData} />

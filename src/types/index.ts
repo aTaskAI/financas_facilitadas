@@ -18,6 +18,7 @@ export interface ExpenseItem {
   id: number;
   nome: string;
   valor: number;
+  categoria: string;
 }
 
 export interface MonthData {
