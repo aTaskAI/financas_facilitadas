@@ -1,9 +1,10 @@
 'use client';
 
-import { createContext, useContext, ReactNode, Dispatch, SetStateAction, useCallback } from 'react';
+import { createContext, useContext, ReactNode, Dispatch, SetStateAction, useCallback, useEffect } from 'react';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import type { SimulatorData, ExpenseData, CouplesData, Loan } from '@/types';
 import { isEqual } from 'lodash';
+import { useAuth } from './auth-context';
 
 
 const initialSimulatorData: SimulatorData = {
@@ -63,31 +64,22 @@ interface FinancialDataContextType {
 
 const FinancialDataContext = createContext<FinancialDataContextType | undefined>(undefined);
 
-// Custom hook to provide a stable setter function that only updates if the value has changed.
-function useStableLocalStorage<T>(key: string, initialValue: T): [T, Dispatch<SetStateAction<T>>] {
-  const [storedValue, setStoredValue] = useLocalStorage<T>(key, initialValue);
-
-  const setValue = useCallback((value: SetStateAction<T>) => {
-    setStoredValue(currentValue => {
-      const newValue = value instanceof Function ? value(currentValue) : value;
-      if (!isEqual(currentValue, newValue)) {
-        return newValue;
-      }
-      return currentValue;
-    });
-  }, [setStoredValue]);
-
-  return [storedValue, setValue];
-}
-
 
 export function FinancialDataProvider({ children }: { children: ReactNode }) {
-  const uid = 'guest';
+  const { user } = useAuth();
+  const uid = user?.uid || 'guest';
 
-  const [simulatorData, setSimulatorData] = useStableLocalStorage<SimulatorData>(`fin-sim-data_${uid}`, initialSimulatorData);
-  const [expenseData, setExpenseData] = useStableLocalStorage<ExpenseData>(`fin-expense-data_${uid}`, initialExpenseData);
-  const [couplesData, setCouplesData] = useStableLocalStorage<CouplesData>(`fin-couples-data_${uid}`, initialCouplesData);
-  const [loans, setLoans] = useStableLocalStorage<Loan[]>(`fin-loans-data_${uid}`, []);
+  const [simulatorData, setSimulatorData] = useLocalStorage<SimulatorData>(`fin-sim-data_${uid}`, initialSimulatorData);
+  const [expenseData, setExpenseData] = useLocalStorage<ExpenseData>(`fin-expense-data_${uid}`, initialExpenseData);
+  const [couplesData, setCouplesData] = useLocalStorage<CouplesData>(`fin-couples-data_${uid}`, initialCouplesData);
+  const [loans, setLoans] = useLocalStorage<Loan[]>(`fin-loans-data_${uid}`, []);
+
+  // Reset data when user changes
+  useEffect(() => {
+    // This effect will run when the `uid` changes, effectively resetting the data
+    // for the new user by re-initializing the useLocalStorage hooks.
+    // We can add explicit reset logic here if needed, but useLocalStorage handles this.
+  }, [uid]);
 
 
   const value = {

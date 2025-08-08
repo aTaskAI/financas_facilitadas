@@ -10,11 +10,10 @@ import { formatCurrency, formatPercentage } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { SimulatorData } from '@/types';
 
-// Função de cálculo movida para fora para não ser recriada
 function calculateFinancing(data: SimulatorData) {
     const { preco, entradaPct, parcelas, taxaAnual, amortizacao } = data;
     
-    if (preco <= 0 || parcelas <= 0 || taxaAnual <= 0) return null;
+    if (preco <= 0 || parcelas <= 0 || taxaAnual < 0) return null;
 
     const valorEntrada = preco * (entradaPct / 100);
     const valorFinanciado = preco - valorEntrada;
@@ -63,22 +62,28 @@ function calculateFinancing(data: SimulatorData) {
     
     const pmtOriginal = primeiraPrestacao;
 
-    while (saldoDevedorAmortizado > 0.01 && mesesComAmortizacao < parcelas * 2) {
-      mesesComAmortizacao++;
-      const juros = saldoDevedorAmortizado * taxaMensal;
-      let amortizacaoPrincipal = pmtOriginal - juros;
-      
-      if (saldoDevedorAmortizado + juros < pmtOriginal) {
-          amortizacaoPrincipal = saldoDevedorAmortizado;
-      }
+    if (amortizacao && amortizacao > 0) {
+        while (saldoDevedorAmortizado > 0.01 && mesesComAmortizacao < parcelas * 2) {
+            mesesComAmortizacao++;
+            const juros = saldoDevedorAmortizado * taxaMensal;
+            let amortizacaoPrincipal = pmtOriginal - juros;
+            
+            if (saldoDevedorAmortizado + juros < pmtOriginal) {
+                amortizacaoPrincipal = saldoDevedorAmortizado;
+            }
 
-      const amortizacaoExtra = Math.min((amortizacao || 0), saldoDevedorAmortizado - amortizacaoPrincipal);
-      const amortizacaoTotal = amortizacaoPrincipal + amortizacaoExtra;
-      const prestacaoPaga = pmtOriginal + amortizacaoExtra;
-      
-      totalPagoComAmortizacao += prestacaoPaga;
-      saldoDevedorAmortizado -= amortizacaoTotal;
+            const amortizacaoExtra = Math.min((amortizacao || 0), saldoDevedorAmortizado - amortizacaoPrincipal);
+            const amortizacaoTotal = amortizacaoPrincipal + amortizacaoExtra;
+            const prestacaoPaga = pmtOriginal + amortizacaoExtra;
+            
+            totalPagoComAmortizacao += prestacaoPaga;
+            saldoDevedorAmortizado -= amortizacaoTotal;
+        }
+    } else {
+        mesesComAmortizacao = parcelas;
+        totalPagoComAmortizacao = primeiraPrestacao * parcelas + valorEntrada;
     }
+
 
     const totalPagoNormal = primeiraPrestacao * parcelas + valorEntrada;
     
@@ -90,44 +95,27 @@ function calculateFinancing(data: SimulatorData) {
       totalPagoNormal, 
       custoRealNormal: totalPagoNormal - preco, 
       totalPagoComAmortizacao, 
-      custoRealAmortizado: totalPagoComAmortizacao - valorFinanciado,
+      custoRealAmortizado: totalPagoComAmortizacao - preco,
       tabela
     };
 }
 
 
 export function FinancingSimulator() {
-  const { simulatorData: globalData, setSimulatorData: setGlobalData } = useFinancialData();
-  
-  // Use um estado local para todas as edições.
-  const [localData, setLocalData] = useState<SimulatorData>(globalData);
-
-  // Sincronize o estado global com o local APENAS QUANDO O COMPONENTE FOR DEIXADO
-  useEffect(() => {
-    // Isso é chamado quando o componente é "desmontado" (o usuário troca de aba)
-    return () => {
-      setGlobalData(localData);
-    };
-  }, [localData, setGlobalData]);
-  
-  // Se o usuário mudar (ex: login/logout), atualize o estado local com os novos dados globais.
-  useEffect(() => {
-    setLocalData(globalData);
-  }, [globalData.nomeA, globalData.nomeB]);
-
+  const { simulatorData, setSimulatorData } = useFinancialData();
 
   const handleInputChange = (field: keyof SimulatorData, value: string | number | boolean) => {
-    setLocalData(prev => ({ ...prev, [field]: value }));
+    setSimulatorData(prev => ({ ...prev, [field]: value }));
   };
 
   const handleCheckboxChange = (parcela: number, checked: boolean) => {
-     setLocalData(prev => ({
+     setSimulatorData(prev => ({
         ...prev,
         parcelasPagas: { ...prev.parcelasPagas, [parcela]: checked },
     }));
   };
 
-  const results = useMemo(() => calculateFinancing(localData), [localData]);
+  const results = useMemo(() => calculateFinancing(simulatorData), [simulatorData]);
 
   if (!results) {
     return (
@@ -137,10 +125,10 @@ export function FinancingSimulator() {
         </CardHeader>
         <CardContent>
            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div><Label htmlFor="preco">Preço do Imóvel (R$)</Label><Input id="preco" type="number" value={localData.preco} onChange={e => handleInputChange('preco', Number(e.target.value))} /></div>
-            <div><Label htmlFor="entrada">Entrada (%)</Label><Input id="entrada" type="number" value={localData.entradaPct} onChange={e => handleInputChange('entradaPct', Number(e.target.value))} /></div>
-            <div><Label htmlFor="parcelas">Parcelas (meses)</Label><Input id="parcelas" type="number" value={localData.parcelas} onChange={e => handleInputChange('parcelas', Number(e.target.value))} /></div>
-            <div><Label htmlFor="taxaAnual">Taxa de Juros (% a.a.)</Label><Input id="taxaAnual" type="number" step="0.1" value={localData.taxaAnual} onChange={e => handleInputChange('taxaAnual', Number(e.target.value))} /></div>
+            <div><Label htmlFor="preco">Preço do Imóvel (R$)</Label><Input id="preco" type="number" value={simulatorData.preco} onChange={e => handleInputChange('preco', Number(e.target.value))} /></div>
+            <div><Label htmlFor="entrada">Entrada (%)</Label><Input id="entrada" type="number" value={simulatorData.entradaPct} onChange={e => handleInputChange('entradaPct', Number(e.target.value))} /></div>
+            <div><Label htmlFor="parcelas">Parcelas (meses)</Label><Input id="parcelas" type="number" value={simulatorData.parcelas} onChange={e => handleInputChange('parcelas', Number(e.target.value))} /></div>
+            <div><Label htmlFor="taxaAnual">Taxa de Juros (% a.a.)</Label><Input id="taxaAnual" type="number" step="0.1" value={simulatorData.taxaAnual} onChange={e => handleInputChange('taxaAnual', Number(e.target.value))} /></div>
           </div>
           <p className="mt-4 text-center text-muted-foreground">Preencha os dados do imóvel para iniciar a simulação.</p>
         </CardContent>
@@ -150,18 +138,18 @@ export function FinancingSimulator() {
   
   const { valorEntrada, valorFinanciado, taxaMensal, primeiraPrestacao, tempoNormal, tempoComAmort, economiaTempo, custoRealNormal, custoRealAmortizado, tabela } = results;
 
-  const rendaTotal = localData.rendaA + localData.rendaB;
-  const percentualA = rendaTotal > 0 ? (localData.rendaA / rendaTotal) : 0.5;
-  const percentualB = rendaTotal > 0 ? (localData.rendaB / rendaTotal) : 0.5;
+  const rendaTotal = simulatorData.rendaA + simulatorData.rendaB;
+  const percentualA = rendaTotal > 0 ? (simulatorData.rendaA / rendaTotal) : 0.5;
+  const percentualB = rendaTotal > 0 ? (simulatorData.rendaB / rendaTotal) : 0.5;
 
   const prestacaoA = primeiraPrestacao * percentualA;
   const prestacaoB = primeiraPrestacao * percentualB;
-  const amortizacaoA = (localData.amortizacao || 0) * percentualA;
-  const amortizacaoB = (localData.amortizacao || 0) * percentualB;
+  const amortizacaoA = (simulatorData.amortizacao || 0) * percentualA;
+  const amortizacaoB = (simulatorData.amortizacao || 0) * percentualB;
   const totalMensalA = prestacaoA + amortizacaoA;
   const totalMensalB = prestacaoB + amortizacaoB;
-  const sobraA = localData.rendaA - localData.gastosA - totalMensalA;
-  const sobraB = localData.rendaB - localData.gastosB - totalMensalB;
+  const sobraA = simulatorData.rendaA - simulatorData.gastosA - totalMensalA;
+  const sobraB = simulatorData.rendaB - simulatorData.gastosB - totalMensalB;
   
   const visibleRows = tabela.length <= 27
     ? tabela
@@ -172,17 +160,17 @@ export function FinancingSimulator() {
       <Card>
         <CardHeader><CardTitle>🏠 Dados do Imóvel e Financiamento</CardTitle></CardHeader>
         <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div><Label htmlFor="preco">Preço do Imóvel (R$)</Label><Input id="preco" type="number" value={localData.preco} onChange={e => handleInputChange('preco', Number(e.target.value))} /></div>
-          <div><Label htmlFor="entrada">Entrada (%)</Label><Input id="entrada" type="number" value={localData.entradaPct} onChange={e => handleInputChange('entradaPct', Number(e.target.value))} /></div>
-          <div><Label htmlFor="parcelas">Parcelas (meses)</Label><Input id="parcelas" type="number" value={localData.parcelas} onChange={e => handleInputChange('parcelas', Number(e.target.value))} /></div>
-          <div><Label htmlFor="taxaAnual">Taxa de Juros (% a.a.)</Label><Input id="taxaAnual" type="number" step="0.1" value={localData.taxaAnual} onChange={e => handleInputChange('taxaAnual', Number(e.target.value))} /></div>
+          <div><Label htmlFor="preco">Preço do Imóvel (R$)</Label><Input id="preco" type="number" value={simulatorData.preco} onChange={e => handleInputChange('preco', Number(e.target.value))} /></div>
+          <div><Label htmlFor="entrada">Entrada (%)</Label><Input id="entrada" type="number" value={simulatorData.entradaPct} onChange={e => handleInputChange('entradaPct', Number(e.target.value))} /></div>
+          <div><Label htmlFor="parcelas">Parcelas (meses)</Label><Input id="parcelas" type="number" value={simulatorData.parcelas} onChange={e => handleInputChange('parcelas', Number(e.target.value))} /></div>
+          <div><Label htmlFor="taxaAnual">Taxa de Juros (% a.a.)</Label><Input id="taxaAnual" type="number" step="0.1" value={simulatorData.taxaAnual} onChange={e => handleInputChange('taxaAnual', Number(e.target.value))} /></div>
         </CardContent>
       </Card>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <Card><CardHeader><CardTitle>{localData.nomeA}</CardTitle></CardHeader><CardContent className="space-y-2"><div><Label>Renda Mensal</Label><Input type="number" value={localData.rendaA} onChange={e => handleInputChange('rendaA', Number(e.target.value))} /></div><div><Label>Gastos Mensais</Label><Input type="number" value={localData.gastosA} onChange={e => handleInputChange('gastosA', Number(e.target.value))} /></div></CardContent></Card>
-        <Card><CardHeader><CardTitle>{localData.nomeB}</CardTitle></CardHeader><CardContent className="space-y-2"><div><Label>Renda Mensal</Label><Input type="number" value={localData.rendaB} onChange={e => handleInputChange('rendaB', Number(e.target.value))} /></div><div><Label>Gastos Mensais</Label><Input type="number" value={localData.gastosB} onChange={e => handleInputChange('gastosB', Number(e.target.value))} /></div></CardContent></Card>
-        <Card className="bg-amber-50 border-amber-200"><CardHeader><CardTitle>Amortização Extra</CardTitle></CardHeader><CardContent><div><Label>Valor Mensal</Label><Input type="number" value={localData.amortizacao} onChange={e => handleInputChange('amortizacao', Number(e.target.value))} /></div><CardDescription className="mt-2">Valor adicional para quitar mais rápido.</CardDescription></CardContent></Card>
+        <Card><CardHeader><CardTitle>{simulatorData.nomeA}</CardTitle></CardHeader><CardContent className="space-y-2"><div><Label>Renda Mensal</Label><Input type="number" value={simulatorData.rendaA} onChange={e => handleInputChange('rendaA', Number(e.target.value))} /></div><div><Label>Gastos Mensais</Label><Input type="number" value={simulatorData.gastosA} onChange={e => handleInputChange('gastosA', Number(e.target.value))} /></div></CardContent></Card>
+        <Card><CardHeader><CardTitle>{simulatorData.nomeB}</CardTitle></CardHeader><CardContent className="space-y-2"><div><Label>Renda Mensal</Label><Input type="number" value={simulatorData.rendaB} onChange={e => handleInputChange('rendaB', Number(e.target.value))} /></div><div><Label>Gastos Mensais</Label><Input type="number" value={simulatorData.gastosB} onChange={e => handleInputChange('gastosB', Number(e.target.value))} /></div></CardContent></Card>
+        <Card className="bg-amber-50 border-amber-200"><CardHeader><CardTitle>Amortização Extra</CardTitle></CardHeader><CardContent><div><Label>Valor Mensal</Label><Input type="number" value={simulatorData.amortizacao} onChange={e => handleInputChange('amortizacao', Number(e.target.value))} /></div><CardDescription className="mt-2">Valor adicional para quitar mais rápido.</CardDescription></CardContent></Card>
       </div>
 
        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -192,8 +180,8 @@ export function FinancingSimulator() {
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card><CardHeader><CardTitle>Divisão Proporcional - {localData.nomeA}</CardTitle></CardHeader><CardContent><div className="flex justify-between"><span>Participação na Renda:</span><span className="font-semibold">{formatPercentage(percentualA * 100)}</span></div><div className="flex justify-between"><span>Parte da Prestação:</span><span className="font-semibold">{formatCurrency(prestacaoA)}</span></div><div className="flex justify-between"><span>Parte da Amortização:</span><span className="font-semibold">{formatCurrency(amortizacaoA)}</span></div><div className="flex justify-between mt-2 pt-2 border-t"><span>Sobra do Salário:</span><span className={`font-bold ${sobraA < 0 ? 'text-red-500' : 'text-green-600'}`}>{formatCurrency(sobraA)}</span></div></CardContent></Card>
-        <Card><CardHeader><CardTitle>Divisão Proporcional - {localData.nomeB}</CardTitle></CardHeader><CardContent><div className="flex justify-between"><span>Participação na Renda:</span><span className="font-semibold">{formatPercentage(percentualB * 100)}</span></div><div className="flex justify-between"><span>Parte da Prestação:</span><span className="font-semibold">{formatCurrency(prestacaoB)}</span></div><div className="flex justify-between"><span>Parte da Amortização:</span><span className="font-semibold">{formatCurrency(amortizacaoB)}</span></div><div className="flex justify-between mt-2 pt-2 border-t"><span>Sobra do Salário:</span><span className={`font-bold ${sobraB < 0 ? 'text-red-500' : 'text-green-600'}`}>{formatCurrency(sobraB)}</span></div></CardContent></Card>
+        <Card><CardHeader><CardTitle>Divisão Proporcional - {simulatorData.nomeA}</CardTitle></CardHeader><CardContent><div className="flex justify-between"><span>Participação na Renda:</span><span className="font-semibold">{formatPercentage(percentualA * 100)}</span></div><div className="flex justify-between"><span>Parte da Prestação:</span><span className="font-semibold">{formatCurrency(prestacaoA)}</span></div><div className="flex justify-between"><span>Parte da Amortização:</span><span className="font-semibold">{formatCurrency(amortizacaoA)}</span></div><div className="flex justify-between mt-2 pt-2 border-t"><span>Sobra do Salário:</span><span className={`font-bold ${sobraA < 0 ? 'text-red-500' : 'text-green-600'}`}>{formatCurrency(sobraA)}</span></div></CardContent></Card>
+        <Card><CardHeader><CardTitle>Divisão Proporcional - {simulatorData.nomeB}</CardTitle></CardHeader><CardContent><div className="flex justify-between"><span>Participação na Renda:</span><span className="font-semibold">{formatPercentage(percentualB * 100)}</span></div><div className="flex justify-between"><span>Parte da Prestação:</span><span className="font-semibold">{formatCurrency(prestacaoB)}</span></div><div className="flex justify-between"><span>Parte da Amortização:</span><span className="font-semibold">{formatCurrency(amortizacaoB)}</span></div><div className="flex justify-between mt-2 pt-2 border-t"><span>Sobra do Salário:</span><span className={`font-bold ${sobraB < 0 ? 'text-red-500' : 'text-green-600'}`}>{formatCurrency(sobraB)}</span></div></CardContent></Card>
       </div>
 
       <Card>
@@ -203,21 +191,21 @@ export function FinancingSimulator() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Pago</TableHead><TableHead>Parcela</TableHead><TableHead>Saldo Devedor</TableHead><TableHead>Amortização</TableHead><TableHead>Juros</TableHead><TableHead>Prestação</TableHead><TableHead>{localData.nomeA}</TableHead><TableHead>{localData.nomeB}</TableHead>
+                  <TableHead>Pago</TableHead><TableHead>Parcela</TableHead><TableHead>Saldo Devedor</TableHead><TableHead>Amortização</TableHead><TableHead>Juros</TableHead><TableHead>Prestação</TableHead><TableHead>{simulatorData.nomeA}</TableHead><TableHead>{simulatorData.nomeB}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {visibleRows.map((row, index) => {
                   const parteA = row.prestacao * percentualA;
                   const parteB = row.prestacao * percentualB;
-                  const isChecked = localData.parcelasPagas[row.parcela] || false;
+                  const isChecked = simulatorData.parcelasPagas[row.parcela] || false;
                   
                   return (
                     <React.Fragment key={row.parcela}>
                      {index === 24 && tempoNormal > 27 && (
                        <TableRow><TableCell colSpan={8} className="text-center">...</TableCell></TableRow>
                      )}
-                    <TableRow className={row.parcela <= tempoComAmort && (localData.amortizacao || 0) > 0 ? "bg-amber-50" : ""}>
+                    <TableRow className={row.parcela <= tempoComAmort && (simulatorData.amortizacao || 0) > 0 ? "bg-amber-50" : ""}>
                       <TableCell><Checkbox checked={isChecked} onCheckedChange={(checked) => handleCheckboxChange(row.parcela, !!checked)} /></TableCell>
                       <TableCell>{row.parcela}</TableCell><TableCell>{formatCurrency(row.saldoDevedor)}</TableCell><TableCell>{formatCurrency(row.amortizacao)}</TableCell><TableCell>{formatCurrency(row.juros)}</TableCell><TableCell>{formatCurrency(row.prestacao)}</TableCell><TableCell>{formatCurrency(parteA)}</TableCell><TableCell>{formatCurrency(parteB)}</TableCell>
                     </TableRow>
@@ -232,5 +220,3 @@ export function FinancingSimulator() {
     </div>
   );
 }
-
-    

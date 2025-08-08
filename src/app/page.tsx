@@ -1,15 +1,35 @@
 'use client';
 
+import { useAuth } from '@/contexts/auth-context';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 import { FinancialDataProvider } from '@/contexts/financial-data-context';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FinancingSimulator } from '@/components/tabs/financing-simulator';
 import { ExpenseTracker } from '@/components/tabs/expense-tracker';
 import { CouplesFinance } from '@/components/tabs/couples-finance';
 import { LoansTracker } from '@/components/tabs/loans-tracker';
-import { Landmark, Users, HandCoins, PiggyBank } from 'lucide-react';
+import { Landmark, Users, HandCoins, PiggyBank, LogOut } from 'lucide-react';
 import { FinancialAdviceModal } from '@/components/ai/financial-advice-modal';
+import { Button } from '@/components/ui/button';
 
 export default function Home() {
+  const { user, loading, logout } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push('/login');
+    }
+  }, [user, loading, router]);
+
+  if (loading || !user) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <p>Carregando...</p>
+      </div>
+    );
+  }
 
   return (
     <FinancialDataProvider>
@@ -23,6 +43,9 @@ export default function Home() {
           </div>
           <div className="flex items-center gap-2">
             <FinancialAdviceModal />
+            <Button variant="outline" size="icon" onClick={logout}>
+              <LogOut className="h-4 w-4" />
+            </Button>
           </div>
         </header>
 
