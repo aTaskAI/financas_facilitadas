@@ -98,7 +98,7 @@ export default function Home() {
              {isMobile && renderNav()}
             <PiggyBank className="h-10 w-10 text-primary" />
             <h1 className="text-xl sm:text-3xl font-bold font-headline text-primary">
-              Finanças Simplificadas
+              Prospera
             </h1>
           </div>
           <div className="flex items-center gap-2">

@@ -5,7 +5,7 @@ import { AuthProvider } from '@/contexts/auth-context';
 import { ThemeProvider } from '@/contexts/theme-provider';
 
 export const metadata: Metadata = {
-  title: 'Finanças Simplificadas',
+  title: 'Prospera',
   description: 'Seu assistente financeiro pessoal',
 };
 
