@@ -10,15 +10,12 @@ import { SpendingDonutChart } from '@/components/charts/spending-donut-chart';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '../ui/button';
 import { CashFlowChart } from '../charts/cash-flow-chart';
-import { useIsMobile } from '@/hooks/use-mobile';
-import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '../ui/carousel';
 
 const meses = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
 
 export function DashboardTab() {
   const { expenseData, loans, simulatorData } = useFinancialData();
   const [currentDate, setCurrentDate] = useState(new Date());
-  const isMobile = useIsMobile();
   
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
@@ -119,96 +116,6 @@ export function DashboardTab() {
   const annualTotalExpenses = cashFlowChartData.reduce((acc, item) => acc + item.despesasTotais, 0);
   const annualFreeCashFlow = cashFlowChartData.reduce((acc, item) => acc + item.fluxoCaixaLivre, 0);
   
-  const chartCards = [
-    {
-      key: 'evolution',
-      title: 'Evolução no Ano',
-      icon: BarChart,
-      content: <MonthlySpendingChart data={annualChartData} />
-    },
-    {
-      key: 'category',
-      title: 'Despesas por Categoria',
-      icon: PieChart,
-      content: <SpendingDonutChart data={donutChartData} />
-    },
-    {
-      key: 'cashflow',
-      title: 'Fluxo de Caixa',
-      icon: AreaChart,
-      content:  <div className="space-y-4">
-                  <div className="grid gap-4 md:grid-cols-3">
-                      <Card>
-                          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                              <CardTitle className="text-sm font-medium">Receita Total Anual</CardTitle>
-                              <TrendingUp className="h-4 w-4 text-emerald-500" />
-                          </CardHeader>
-                          <CardContent>
-                              <div className="text-2xl font-bold text-emerald-600">{formatCurrency(annualTotalIncome)}</div>
-                              <p className="text-xs text-muted-foreground">Total de entradas em {year}</p>
-                          </CardContent>
-                      </Card>
-                      <Card>
-                          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                              <CardTitle className="text-sm font-medium">Despesas Totais Anual</CardTitle>
-                              <TrendingDown className="h-4 w-4 text-red-500" />
-                          </CardHeader>
-                          <CardContent>
-                              <div className="text-2xl font-bold text-red-600">{formatCurrency(annualTotalExpenses)}</div>
-                              <p className="text-xs text-muted-foreground">Total de saídas em {year}</p>
-                          </CardContent>
-                      </Card>
-                      <Card>
-                          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                              <CardTitle className="text-sm font-medium">Fluxo de Caixa Livre Anual</CardTitle>
-                              <Wallet className="h-4 w-4 text-primary" />
-                          </CardHeader>
-                          <CardContent>
-                              <div className="text-2xl font-bold text-primary">{formatCurrency(annualFreeCashFlow)}</div>
-                              <p className="text-xs text-muted-foreground">Saldo final após todas as movimentações em {year}</p>
-                          </CardContent>
-                      </Card>
-                  </div>
-                  <CashFlowChart data={cashFlowChartData} />
-                </div>
-    }
-  ];
-
-  const renderCharts = () => {
-    if (isMobile) {
-      return (
-         <Carousel className="w-full" opts={{ loop: false, align: "start" }}>
-            <CarouselContent className="-ml-2">
-              {chartCards.map((chart) => (
-                <CarouselItem key={chart.key} className="pl-2">
-                  <div className="p-1">{chart.content}</div>
-                </CarouselItem>
-              ))}
-            </CarouselContent>
-            <CarouselPrevious className="ml-12" />
-            <CarouselNext className="mr-12" />
-          </Carousel>
-      )
-    }
-
-    return (
-       <Tabs defaultValue="evolution" className="w-full">
-          <TabsList>
-            {chartCards.map(chart => (
-              <TabsTrigger key={chart.key} value={chart.key}>
-                <chart.icon className="mr-2 h-4 w-4" /> {chart.title}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-           {chartCards.map(chart => (
-            <TabsContent key={chart.key} value={chart.key} className="mt-4">
-              {chart.content}
-            </TabsContent>
-          ))}
-      </Tabs>
-    )
-  }
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -256,7 +163,56 @@ export function DashboardTab() {
         </div>
         
        <div className="mt-6">
-        {renderCharts()}
+          <Tabs defaultValue="evolution" className="w-full">
+            <TabsList className="grid w-full grid-cols-1 sm:grid-cols-3">
+              <TabsTrigger value="evolution"><BarChart className="mr-2 h-4 w-4" /> Evolução no Ano</TabsTrigger>
+              <TabsTrigger value="category"><PieChart className="mr-2 h-4 w-4" /> Despesas por Categoria</TabsTrigger>
+              <TabsTrigger value="cashflow"><AreaChart className="mr-2 h-4 w-4" /> Fluxo de Caixa</TabsTrigger>
+            </TabsList>
+            <TabsContent value="evolution" className="mt-4">
+               <MonthlySpendingChart data={annualChartData} />
+            </TabsContent>
+            <TabsContent value="category" className="mt-4">
+              <SpendingDonutChart data={donutChartData} />
+            </TabsContent>
+            <TabsContent value="cashflow" className="mt-4">
+              <div className="space-y-4">
+                    <div className="grid gap-4 md:grid-cols-3">
+                        <Card>
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <CardTitle className="text-sm font-medium">Receita Total Anual</CardTitle>
+                                <TrendingUp className="h-4 w-4 text-emerald-500" />
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-2xl font-bold text-emerald-600">{formatCurrency(annualTotalIncome)}</div>
+                                <p className="text-xs text-muted-foreground">Total de entradas em {year}</p>
+                            </CardContent>
+                        </Card>
+                        <Card>
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <CardTitle className="text-sm font-medium">Despesas Totais Anual</CardTitle>
+                                <TrendingDown className="h-4 w-4 text-red-500" />
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-2xl font-bold text-red-600">{formatCurrency(annualTotalExpenses)}</div>
+                                <p className="text-xs text-muted-foreground">Total de saídas em {year}</p>
+                            </CardContent>
+                        </Card>
+                        <Card>
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <CardTitle className="text-sm font-medium">Fluxo de Caixa Livre Anual</CardTitle>
+                                <Wallet className="h-4 w-4 text-primary" />
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-2xl font-bold text-primary">{formatCurrency(annualFreeCashFlow)}</div>
+                                <p className="text-xs text-muted-foreground">Saldo final após todas as movimentações em {year}</p>
+                            </CardContent>
+                        </Card>
+                    </div>
+                    <CashFlowChart data={cashFlowChartData} />
+                  </div>
+            </TabsContent>
+          </Tabs>
        </div>
     </div>
   );
