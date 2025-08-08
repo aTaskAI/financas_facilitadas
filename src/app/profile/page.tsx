@@ -215,7 +215,7 @@ export default function ProfilePage() {
             <CardContent>
                 <div className="space-y-2">
                   <Label htmlFor="theme">Tema</Label>
-                  <Select value={theme} onValueChange={setTheme}>
+                   <Select value={theme} onValueChange={setTheme}>
                     <SelectTrigger id="theme">
                       <SelectValue placeholder="Selecione o tema" />
                     </SelectTrigger>
