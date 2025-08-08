@@ -76,7 +76,7 @@ const FinancialDataContext = createContext<FinancialDataContextType | undefined>
 
 // --- Provider Component ---
 export function FinancialDataProvider({ children }: { children: ReactNode }) {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const uid = user?.uid;
 
   const [simulatorData, setSimulatorData] = useState<SimulatorData>(initialSimulatorData);
@@ -92,19 +92,24 @@ export function FinancialDataProvider({ children }: { children: ReactNode }) {
   
   // Effect to load data from Firestore when user logs in
   useEffect(() => {
+    // Wait until auth is resolved
+    if (authLoading) {
+      return;
+    }
+    
+    // If there is no user, initialize with default state and stop loading
     if (!uid) {
-        if (!isFirebaseConfigured) {
-            const initialState = getInitialState();
-            setSimulatorData(initialState.simulatorData);
-            setExpenseData(initialState.expenseData);
-            setCouplesData(initialState.couplesData);
-            setLoans(initialState.loans);
-            setLastSavedState(initialState);
-            setIsDataLoading(false);
-        }
+        const initialState = getInitialState();
+        setSimulatorData(initialState.simulatorData);
+        setExpenseData(initialState.expenseData);
+        setCouplesData(initialState.couplesData);
+        setLoans(initialState.loans);
+        setLastSavedState(initialState);
+        setIsDataLoading(false);
         return;
     }
 
+    // If there is a user, start loading data from Firestore
     setIsDataLoading(true);
     const docRef = doc(db, 'users', uid);
 
@@ -128,7 +133,7 @@ export function FinancialDataProvider({ children }: { children: ReactNode }) {
         setExpenseData(finalState.expenseData);
         setCouplesData(finalState.couplesData);
         setLoans(finalState.loans);
-        setLastSavedState(finalState);
+        setLastSavedState(cloneDeep(finalState));
         setIsDataLoading(false);
 
     }, (error) => {
@@ -142,12 +147,12 @@ export function FinancialDataProvider({ children }: { children: ReactNode }) {
     });
 
     return () => unsubscribe();
-  }, [uid]);
+  }, [uid, authLoading]);
 
   // Effect to save data to Firestore when it changes
   useEffect(() => {
     const currentState = getCombinedState();
-    if (!uid || !isFirebaseConfigured || isDataLoading || isEqual(currentState, lastSavedState)) {
+    if (!uid || isDataLoading || isEqual(currentState, lastSavedState)) {
         return;
     }
 
@@ -157,7 +162,7 @@ export function FinancialDataProvider({ children }: { children: ReactNode }) {
             // Use JSON stringify/parse to remove any undefined values that Firestore doesn't support
             const dataToSave = JSON.parse(JSON.stringify(currentState));
             await setDoc(docRef, dataToSave, { merge: true });
-            setLastSavedState(currentState);
+            setLastSavedState(cloneDeep(currentState));
         } catch (error) {
             console.error("Error saving data to Firestore:", error);
         }
@@ -177,8 +182,9 @@ export function FinancialDataProvider({ children }: { children: ReactNode }) {
     setLoans,
     isDataLoading
   };
-
-  if (isDataLoading && isFirebaseConfigured) {
+  
+  // Display a global loading indicator while auth or financial data is loading
+  if (authLoading || (isDataLoading && !!uid)) {
     return (
         <div className="flex h-screen items-center justify-center">
             <p>Carregando seus dados...</p>

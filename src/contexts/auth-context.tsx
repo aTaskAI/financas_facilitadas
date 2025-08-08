@@ -174,9 +174,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     await updateProfile(currentUser, { displayName, photoURL });
     
-    const updatedUser = Object.assign(Object.create(Object.getPrototypeOf(currentUser)), currentUser);
-    updatedUser.displayName = displayName;
-    updatedUser.photoURL = photoURL;
+    // Create a new user object to force re-render
+    const updatedUser: User = { ...currentUser, displayName, photoURL };
     setUser(updatedUser);
   };
   
