@@ -35,11 +35,42 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const useMockAuth = () => {
+    const [user, setUser] = useState<User | null>({
+        uid: 'mock-user-id',
+        email: 'mock@example.com',
+        displayName: 'Mock User',
+        photoURL: 'https://placehold.co/100x100.png',
+    } as User);
+    const [userData, setUserData] = useState<UserData | null>({
+        nome: 'Mock User',
+        renda: 5000,
+    });
+    const [loading, setLoading] = useState(false);
+    const router = useRouter();
+
+    const logout = async () => {
+        setUser(null);
+        setUserData(null);
+        router.push('/login');
+    };
+
+    const updateUserData = async (data: Partial<UserData>) => {
+        setUserData(prev => ({...prev, ...data} as UserData));
+    };
+
+    return { user, userData, loading, logout, updateUserData };
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [userData, setUserData] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+
+  const isFirebaseConfigured = process.env.NEXT_PUBLIC_FIREBASE_API_KEY && process.env.NEXT_PUBLIC_FIREBASE_API_KEY !== 'SUA_API_KEY_AQUI';
+
+  const mockAuth = useMockAuth();
 
   const updateUserData = useCallback(async (data: Partial<UserData>) => {
     if (!user) return;
@@ -53,6 +84,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [user]);
 
   useEffect(() => {
+    if (!isFirebaseConfigured) {
+        setLoading(false);
+        return;
+    };
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         setUser(user);
@@ -72,18 +107,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     return () => unsubscribe();
-  }, [router]);
+  }, [router, isFirebaseConfigured]);
 
   const logout = async () => {
     try {
-      await firebaseSignOut(auth);
+        if (isFirebaseConfigured) {
+            await firebaseSignOut(auth);
+        }
       router.push('/login');
     } catch (error) {
       console.error('Error signing out:', error);
     }
   };
 
-  const value = { user, userData, loading, logout, updateUserData };
+  const value = isFirebaseConfigured ? { user, userData, loading, logout, updateUserData } : mockAuth;
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
