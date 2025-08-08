@@ -21,6 +21,7 @@ const initialSimulatorData: SimulatorData = {
   gastosB: 0,
   amortizacao: 1000,
   parcelasPagas: {},
+  valorFinanciado: 0,
 };
 
 const initialExpenseData: ExpenseData = {
@@ -132,7 +133,8 @@ export function FinancialDataProvider({ children }: { children: ReactNode }) {
     });
 
     return () => unsubscribe();
-  }, [uid, getCombinedState]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [uid]);
 
   // Effect to save data to Firestore when it changes
   useEffect(() => {
