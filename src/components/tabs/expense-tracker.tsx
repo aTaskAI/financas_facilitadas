@@ -147,7 +147,7 @@ export function ExpenseTracker() {
           <CardTitle className="flex items-center gap-2">{icon} {title}</CardTitle>
       </CardHeader>
       <CardContent 
-        className="space-y-2 flex-grow min-h-[100px]" 
+        className="space-y-2 flex-grow min-h-[100px] p-4" 
         onDrop={(e) => handleDrop(e, categoria)} 
         onDragOver={handleDragOver}
       >
@@ -156,18 +156,24 @@ export function ExpenseTracker() {
               key={item.id} 
               draggable 
               onDragStart={(e) => handleDragStart(e, item.id, categoria)} 
-              className="flex gap-2 items-center p-2 rounded-md hover:bg-slate-100 cursor-move animate-fade-in-down"
+              className="flex gap-2 items-center p-2 rounded-md hover:bg-slate-100 cursor-move"
           >
               <Input value={item.nome} onChange={e => handleItemChange(categoria, item.id, 'nome', e.target.value)} placeholder="Descrição" />
               <Input type="number" value={item.valor} onChange={e => handleItemChange(categoria, item.id, 'valor', Number(e.target.value))} className="w-32" placeholder="Valor" />
-              <Button variant="ghost" size="icon" onClick={() => removeItem(categoria, item.id)}>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={() => removeItem(categoria, item.id)}
+                // Impede que o clique no botão inicie o evento de arrastar
+                onMouseDown={(e) => e.stopPropagation()}
+              >
                 <Trash2 className="h-4 w-4 text-red-500" />
               </Button>
           </div>
           ))}
       </CardContent>
       <CardFooter>
-        <Button onClick={() => addItem(categoria)} className="w-full mt-2">
+        <Button onClick={() => addItem(categoria)} className="w-full">
             <PlusCircle className="mr-2 h-4 w-4" /> Adicionar
         </Button>
       </CardFooter>
