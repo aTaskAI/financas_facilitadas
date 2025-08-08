@@ -83,6 +83,7 @@ export interface Payment {
   numero: number;
   valor: number;
   pago: boolean;
+  dataPagamento?: string;
 }
 
 export interface Loan {

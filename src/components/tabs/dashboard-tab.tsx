@@ -3,15 +3,13 @@
 import { useState } from 'react';
 import { useFinancialData } from '@/contexts/financial-data-context';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { formatCurrency } from '@/lib/utils';
-import { DollarSign, TrendingDown, TrendingUp, ChevronLeft, ChevronRight, BarChart, PieChart, AreaChart } from 'lucide-react';
+import { DollarSign, TrendingDown, TrendingUp, ChevronLeft, ChevronRight, BarChart, PieChart, AreaChart, Wallet } from 'lucide-react';
 import { MonthlySpendingChart } from '@/components/charts/monthly-spending-chart';
 import { SpendingDonutChart } from '@/components/charts/spending-donut-chart';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '../ui/button';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
-import { ScrollArea } from '../ui/scroll-area';
+import { CashFlowChart } from '../charts/cash-flow-chart';
 
 const meses = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
 
@@ -73,23 +71,25 @@ export function DashboardTab() {
     { name: 'Não Essenciais', value: naoEssenciais, fill: 'hsl(var(--accent))' }
   ].filter(d => d.value > 0);
 
-  const cashFlowData = meses.map((_, monthIndex) => {
+  const cashFlowChartData = meses.map((_, monthIndex) => {
     const monthData = currentPersonData?.[monthIndex] || { receitas: [], essenciais: [], naoEssenciais: [] };
     const receitaTotal = monthData.receitas.reduce((acc, item) => acc + item.valor, 0);
     const despesasTotais = monthData.essenciais.reduce((acc, i) => acc + i.valor, 0) + monthData.naoEssenciais.reduce((acc, i) => acc + i.valor, 0);
     const saldoOperacional = receitaTotal - despesasTotais;
     
-    // Simplistic view of debt payments - assumes financing and loans are paid monthly
-    const financiamentoPago = (simulatorData.parcelasPagas[monthIndex + 1] ? (simulatorData.valorFinanciado / simulatorData.parcelas) : 0) + (simulatorData.amortizacao || 0);
+    // Simplistic view of debt payments
+    const financiamentoPago = simulatorData.parcelasPagas[monthIndex + 1] ? (simulatorData.valorFinanciado / simulatorData.parcelas) : 0;
     const emprestimosPagos = loans.reduce((acc, loan) => {
-      return acc + loan.pagamentos.filter(p => p.pago).reduce((sum, p) => sum + p.valor, 0) / loan.parcelas; // Simplified average
+       const parcelaMensal = loan.valorTotal / loan.parcelas;
+       const pagamentosNesteMes = loan.pagamentos.filter(p => p.pago && new Date(p.dataPagamento || 0).getMonth() === monthIndex && new Date(p.dataPagamento || 0).getFullYear() === year).length;
+       return acc + (parcelaMensal * pagamentosNesteMes);
     }, 0);
     
     const pagamentoDividas = financiamentoPago + emprestimosPagos;
     const fluxoCaixaLivre = saldoOperacional - pagamentoDividas;
 
     return {
-      name: meses[monthIndex],
+      name: meses[monthIndex].substring(0, 3),
       receitaTotal,
       despesasTotais,
       saldoOperacional,
@@ -97,7 +97,10 @@ export function DashboardTab() {
       fluxoCaixaLivre
     };
   });
-
+  
+  const annualTotalIncome = cashFlowChartData.reduce((acc, item) => acc + item.receitaTotal, 0);
+  const annualTotalExpenses = cashFlowChartData.reduce((acc, item) => acc + item.despesasTotais, 0);
+  const annualFreeCashFlow = cashFlowChartData.reduce((acc, item) => acc + item.fluxoCaixaLivre, 0);
 
   return (
     <div className="space-y-6">
@@ -158,40 +161,41 @@ export function DashboardTab() {
                 <SpendingDonutChart data={donutChartData} />
             </TabsContent>
             <TabsContent value="cashflow">
-               <Card>
-                <CardHeader>
-                    <CardTitle>Fluxo de Caixa Anual</CardTitle>
-                    <CardDescription>Análise detalhada do seu fluxo de caixa mensal ao longo do ano de {year}.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ScrollArea className="h-[400px]">
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead className="w-[100px]">Mês</TableHead>
-                                <TableHead className="text-right">Receita Total</TableHead>
-                                <TableHead className="text-right">Despesas Totais</TableHead>
-                                <TableHead className="text-right">Saldo Operacional</TableHead>
-                                <TableHead className="text-right">Pag. Dívidas</TableHead>
-                                <TableHead className="text-right text-emerald-600 font-bold">Fluxo de Caixa Livre</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {cashFlowData.map((item) => (
-                                <TableRow key={item.name}>
-                                    <TableCell className="font-medium">{item.name}</TableCell>
-                                    <TableCell className="text-right text-emerald-600">{formatCurrency(item.receitaTotal)}</TableCell>
-                                    <TableCell className="text-right text-red-600">{formatCurrency(item.despesasTotais)}</TableCell>
-                                    <TableCell className={`text-right font-medium ${item.saldoOperacional >= 0 ? 'text-foreground' : 'text-red-600'}`}>{formatCurrency(item.saldoOperacional)}</TableCell>
-                                    <TableCell className="text-right text-orange-600">{formatCurrency(item.pagamentoDividas)}</TableCell>
-                                    <TableCell className={`text-right font-bold ${item.fluxoCaixaLivre >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>{formatCurrency(item.fluxoCaixaLivre)}</TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                   </ScrollArea>
-                </CardContent>
-               </Card>
+              <div className="space-y-4">
+                <div className="grid gap-4 md:grid-cols-3">
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Receita Total Anual</CardTitle>
+                            <TrendingUp className="h-4 w-4 text-emerald-500" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold text-emerald-600">{formatCurrency(annualTotalIncome)}</div>
+                            <p className="text-xs text-muted-foreground">Total de entradas em {year}</p>
+                        </CardContent>
+                    </Card>
+                     <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Despesas Totais Anual</CardTitle>
+                            <TrendingDown className="h-4 w-4 text-red-500" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold text-red-600">{formatCurrency(annualTotalExpenses)}</div>
+                             <p className="text-xs text-muted-foreground">Total de saídas em {year}</p>
+                        </CardContent>
+                    </Card>
+                     <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Fluxo de Caixa Livre Anual</CardTitle>
+                            <Wallet className="h-4 w-4 text-primary" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold text-primary">{formatCurrency(annualFreeCashFlow)}</div>
+                             <p className="text-xs text-muted-foreground">Saldo final após todas as movimentações em {year}</p>
+                        </CardContent>
+                    </Card>
+                </div>
+                 <CashFlowChart data={cashFlowChartData} />
+              </div>
             </TabsContent>
         </Tabs>
     </div>
