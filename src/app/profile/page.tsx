@@ -12,9 +12,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Loader2 } from 'lucide-react';
+import { Loader2, ArrowLeft } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import Link from 'next/link';
 
 const profileSchema = z.object({
   displayName: z.string().min(2, { message: "O nome deve ter pelo menos 2 caracteres." }),
@@ -121,7 +122,16 @@ export default function ProfilePage() {
 
   return (
     <div className="container mx-auto max-w-4xl p-4 sm:p-6 lg:p-8">
-      <h1 className="text-3xl font-bold mb-6">Meu Perfil</h1>
+      <div className="flex items-center justify-between mb-6">
+         <h1 className="text-3xl font-bold">Meu Perfil</h1>
+         <Link href="/">
+           <Button variant="outline">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Voltar ao Início
+           </Button>
+         </Link>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         <Card>
           <CardHeader>
