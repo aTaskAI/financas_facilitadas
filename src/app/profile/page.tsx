@@ -3,9 +3,6 @@
 import { useAuth } from '@/contexts/auth-context';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { useForm, Controller } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,59 +14,40 @@ import { useTheme } from 'next-themes';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import Link from 'next/link';
 
-const profileSchema = z.object({
-  displayName: z.string().min(2, { message: "O nome deve ter pelo menos 2 caracteres." }),
-});
-
-const passwordSchema = z.object({
-  newPassword: z.string().min(6, { message: "A senha deve ter pelo menos 6 caracteres." }),
-  confirmPassword: z.string()
-}).refine(data => data.newPassword === data.confirmPassword, {
-  message: "As senhas não correspondem.",
-  path: ["confirmPassword"],
-});
-
-
 export default function ProfilePage() {
   const { user, loading, updateUserProfile, updateUserPassword } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
   const { theme, setTheme } = useTheme();
 
+  const [displayName, setDisplayName] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+
   const [isProfileSaving, setIsProfileSaving] = useState(false);
   const [isPasswordSaving, setIsPasswordSaving] = useState(false);
   const [newPhoto, setNewPhoto] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
-
-  const { control: profileControl, handleSubmit: handleProfileSubmit, formState: { errors: profileErrors }, setValue: setProfileValue } = useForm({
-    resolver: zodResolver(profileSchema),
-    defaultValues: {
-      displayName: '',
-    }
-  });
-
-  const { control: passwordControl, handleSubmit: handlePasswordSubmit, formState: { errors: passwordErrors }, reset: resetPasswordForm } = useForm({
-    resolver: zodResolver(passwordSchema),
-    defaultValues: {
-      newPassword: '',
-      confirmPassword: '',
-    }
-  });
 
   useEffect(() => {
     if (!loading && !user) {
       router.push('/login');
     }
     if (user) {
-      setProfileValue('displayName', user.displayName || '');
+      setDisplayName(user.displayName || '');
     }
-  }, [user, loading, router, setProfileValue]);
+  }, [user, loading, router]);
 
-  const onProfileSubmit = async (data: z.infer<typeof profileSchema>) => {
+  const handleProfileSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     if (!updateUserProfile) return;
+    if (displayName.length < 2) {
+        toast({ title: "Erro", description: "O nome deve ter pelo menos 2 caracteres.", variant: "destructive" });
+        return;
+    }
     setIsProfileSaving(true);
     try {
-      await updateUserProfile(data.displayName, newPhoto);
+      await updateUserProfile(displayName, newPhoto);
       toast({
         title: "Sucesso!",
         description: "Seu perfil foi atualizado.",
@@ -87,26 +65,31 @@ export default function ProfilePage() {
     }
   };
 
-  const onPasswordSubmit = async (data: z.infer<typeof passwordSchema>) => {
-     if (!updateUserPassword || !user) return;
-     // Do not allow password change for Google provider
-     if (user.providerData.some(p => p.providerId === 'google.com')) {
-        toast({
-            title: "Ação não permitida",
-            description: "Você não pode alterar a senha de uma conta logada com o Google.",
-            variant: "destructive",
-        });
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!updateUserPassword || !user) return;
+    if (user.providerData.some(p => p.providerId === 'google.com')) {
+        toast({ title: "Ação não permitida", description: "Você não pode alterar a senha de uma conta logada com o Google.", variant: "destructive" });
         return;
-     }
+    }
+    if (newPassword.length < 6) {
+        toast({ title: "Erro", description: "A senha deve ter pelo menos 6 caracteres.", variant: "destructive" });
+        return;
+    }
+    if (newPassword !== confirmPassword) {
+        toast({ title: "Erro", description: "As senhas não correspondem.", variant: "destructive" });
+        return;
+    }
 
     setIsPasswordSaving(true);
     try {
-      await updateUserPassword(data.newPassword);
+      await updateUserPassword(newPassword);
       toast({
         title: "Sucesso!",
         description: "Sua senha foi alterada.",
       });
-      resetPasswordForm();
+      setNewPassword('');
+      setConfirmPassword('');
     } catch (error: any) {
        toast({
         title: "Erro",
@@ -145,7 +128,7 @@ export default function ProfilePage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        <form onSubmit={handleProfileSubmit(onProfileSubmit)} className="md:col-span-2">
+        <form onSubmit={handleProfileSubmit} className="md:col-span-2">
             <Card>
               <CardHeader>
                 <CardTitle>Informações Pessoais</CardTitle>
@@ -161,12 +144,7 @@ export default function ProfilePage() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="displayName">Nome</Label>
-                  <Controller
-                    name="displayName"
-                    control={profileControl}
-                    render={({ field }) => <Input {...field} id="displayName" />}
-                  />
-                  {profileErrors.displayName && <p className="text-sm text-red-500">{profileErrors.displayName.message}</p>}
+                  <Input id="displayName" value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
                 </div>
                 <div className="space-y-2">
                   <Label>Email</Label>
@@ -188,25 +166,15 @@ export default function ProfilePage() {
               <CardTitle>Alterar Senha</CardTitle>
                <CardDescription>Defina uma nova senha de acesso.</CardDescription>
             </CardHeader>
-            <form onSubmit={handlePasswordSubmit(onPasswordSubmit)}>
+            <form onSubmit={handlePasswordSubmit}>
               <CardContent className="space-y-4">
                  <div className="space-y-2">
                   <Label htmlFor="newPassword">Nova Senha</Label>
-                   <Controller
-                    name="newPassword"
-                    control={passwordControl}
-                    render={({ field }) => <Input {...field} id="newPassword" type="password" disabled={isGoogleProvider} />}
-                  />
-                  {passwordErrors.newPassword && <p className="text-sm text-red-500">{passwordErrors.newPassword.message}</p>}
+                   <Input id="newPassword" type="password" disabled={isGoogleProvider} value={newPassword} onChange={e => setNewPassword(e.target.value)} />
                 </div>
                  <div className="space-y-2">
                   <Label htmlFor="confirmPassword">Confirmar Nova Senha</Label>
-                  <Controller
-                    name="confirmPassword"
-                    control={passwordControl}
-                    render={({ field }) => <Input {...field} id="confirmPassword" type="password" disabled={isGoogleProvider} />}
-                  />
-                  {passwordErrors.confirmPassword && <p className="text-sm text-red-500">{passwordErrors.confirmPassword.message}</p>}
+                  <Input id="confirmPassword" type="password" disabled={isGoogleProvider} value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} />
                 </div>
                 {isGoogleProvider && <p className="text-xs text-muted-foreground pt-2">Você não pode alterar a senha de uma conta logada com o Google.</p>}
               </CardContent>

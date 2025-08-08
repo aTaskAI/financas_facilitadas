@@ -1,9 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { useForm, Controller } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -14,7 +11,6 @@ import {
   DialogTrigger,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { useFinancialData } from '@/contexts/financial-data-context';
@@ -23,32 +19,39 @@ import { BrainCircuit, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from '../ui/scroll-area';
 
-const adviceSchema = z.object({
-  financialGoals: z.string().min(10, 'Por favor, descreva seus objetivos com mais detalhes.'),
-  spendingPatterns: z.string().min(10, 'Por favor, descreva seus padrões de gastos com mais detalhes.'),
-});
-
 export function FinancialAdviceModal() {
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [advice, setAdvice] = useState<string | null>(null);
   const { toast } = useToast();
+  
+  const [financialGoals, setFinancialGoals] = useState('');
+  const [spendingPatterns, setSpendingPatterns] = useState('');
+  const [errors, setErrors] = useState<{ financialGoals?: string, spendingPatterns?: string }>({});
+
   const {
     simulatorData,
     expenseData,
     loans,
     couplesData
   } = useFinancialData();
+  
+  const validate = () => {
+    const newErrors: { financialGoals?: string, spendingPatterns?: string } = {};
+    if (financialGoals.length < 10) {
+      newErrors.financialGoals = 'Por favor, descreva seus objetivos com mais detalhes (mínimo 10 caracteres).';
+    }
+    if (spendingPatterns.length < 10) {
+      newErrors.spendingPatterns = 'Por favor, descreva seus padrões de gastos com mais detalhes (mínimo 10 caracteres).';
+    }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  }
 
-  const { control, handleSubmit, formState: { errors } } = useForm({
-    resolver: zodResolver(adviceSchema),
-    defaultValues: {
-      financialGoals: '',
-      spendingPatterns: '',
-    },
-  });
-
-  const onSubmit = async (data: z.infer<typeof adviceSchema>) => {
+  const onSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!validate()) return;
+    
     setIsLoading(true);
     setAdvice(null);
     try {
@@ -58,7 +61,6 @@ export function FinancialAdviceModal() {
       let totalMonthlyIncome = 0;
       let totalMonthlyExpenses = 0;
       
-      // 1. Aggregate income and expenses from all personal sub-tabs
       for (const subTabId in expenseData.subTabs) {
         const subTab = expenseData.subTabs[subTabId];
         const monthData = subTab.data?.[year]?.[month];
@@ -69,17 +71,15 @@ export function FinancialAdviceModal() {
         }
       }
 
-      // 2. Aggregate income and expenses from the couples tab
       const coupleMonthData = couplesData.yearData?.[year]?.[month];
       if (coupleMonthData) {
         totalMonthlyIncome += coupleMonthData.rendaA || 0;
         totalMonthlyIncome += coupleMonthData.rendaB || 0;
         totalMonthlyExpenses += coupleMonthData.contas.reduce((acc, c) => acc + c.valor, 0);
-        totalMonthlyExpenses += coupleMonthData.poupancaA || 0; // Savings are considered an 'expense' for cash flow purposes
+        totalMonthlyExpenses += coupleMonthData.poupancaA || 0;
         totalMonthlyExpenses += coupleMonthData.poupancaB || 0;
       }
       
-      // 3. Aggregate total debts
       const financingDebt = simulatorData.valorFinanciado > 0 
           ? simulatorData.valorFinanciado - (simulatorData.parcelasPagas ? Object.keys(simulatorData.parcelasPagas).length * (simulatorData.valorFinanciado / simulatorData.parcelas) : 0)
           : 0;
@@ -90,8 +90,6 @@ export function FinancialAdviceModal() {
       }, 0);
 
       const totalDebts = financingDebt + loansDebt;
-
-      // 4. Calculate saving rate based on aggregated data
       const savingRate = totalMonthlyIncome > 0 ? ((totalMonthlyIncome - totalMonthlyExpenses) / totalMonthlyIncome) * 100 : 0;
       
       const input: PersonalizedFinancialAdviceInput = {
@@ -99,8 +97,8 @@ export function FinancialAdviceModal() {
         expenses: totalMonthlyExpenses,
         debts: totalDebts,
         savingRate: parseFloat(savingRate.toFixed(2)),
-        financialGoals: data.financialGoals,
-        spendingPatterns: data.spendingPatterns,
+        financialGoals: financialGoals,
+        spendingPatterns: spendingPatterns,
       };
       
       const result = await getPersonalizedFinancialAdvice(input);
@@ -121,6 +119,9 @@ export function FinancialAdviceModal() {
     setIsOpen(open);
     if (!open) {
       setAdvice(null);
+      setFinancialGoals('');
+      setSpendingPatterns('');
+      setErrors({});
     }
   }
 
@@ -140,28 +141,28 @@ export function FinancialAdviceModal() {
           </DialogDescription>
         </DialogHeader>
         {!advice && (
-           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+           <form onSubmit={onSubmit} className="space-y-4">
             <div>
               <Label htmlFor="financialGoals">Metas Financeiras</Label>
-              <Controller
-                name="financialGoals"
-                control={control}
-                render={({ field }) => (
-                  <Textarea {...field} id="financialGoals" placeholder="Ex: Quitar o financiamento em 10 anos, fazer uma viagem internacional, aposentar aos 50 anos..." className="mt-1" />
-                )}
+              <Textarea 
+                id="financialGoals" 
+                placeholder="Ex: Quitar o financiamento em 10 anos, fazer uma viagem internacional, aposentar aos 50 anos..." 
+                className="mt-1"
+                value={financialGoals}
+                onChange={e => setFinancialGoals(e.target.value)}
               />
-              {errors.financialGoals && <p className="text-red-500 text-sm mt-1">{errors.financialGoals.message}</p>}
+              {errors.financialGoals && <p className="text-red-500 text-sm mt-1">{errors.financialGoals}</p>}
             </div>
             <div>
               <Label htmlFor="spendingPatterns">Padrões de Gastos</Label>
-               <Controller
-                name="spendingPatterns"
-                control={control}
-                render={({ field }) => (
-                  <Textarea {...field} id="spendingPatterns" placeholder="Ex: Gasto muito com delivery nos finais de semana, costumo comprar roupas por impulso, etc." className="mt-1" />
-                )}
+              <Textarea 
+                id="spendingPatterns" 
+                placeholder="Ex: Gasto muito com delivery nos finais de semana, costumo comprar roupas por impulso, etc." 
+                className="mt-1"
+                value={spendingPatterns}
+                onChange={e => setSpendingPatterns(e.target.value)}
               />
-              {errors.spendingPatterns && <p className="text-red-500 text-sm mt-1">{errors.spendingPatterns.message}</p>}
+              {errors.spendingPatterns && <p className="text-red-500 text-sm mt-1">{errors.spendingPatterns}</p>}
             </div>
              <DialogFooter>
               <Button type="submit" disabled={isLoading}>
