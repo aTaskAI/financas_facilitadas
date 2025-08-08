@@ -255,7 +255,9 @@ export function DashboardTab() {
             </Card>
         </div>
         
-       {renderCharts()}
+       <div className="mt-6">
+        {renderCharts()}
+       </div>
     </div>
   );
 }
