@@ -222,7 +222,6 @@ export default function ProfilePage() {
                     <SelectContent>
                       <SelectItem value="light">Claro</SelectItem>
                       <SelectItem value="dark">Escuro</SelectItem>
-                      <SelectItem value="system">Padrão do Sistema</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
