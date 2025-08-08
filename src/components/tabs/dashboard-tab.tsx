@@ -5,16 +5,18 @@ import { useFinancialData } from '@/contexts/financial-data-context';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { formatCurrency } from '@/lib/utils';
-import { DollarSign, TrendingDown, TrendingUp, ChevronLeft, ChevronRight, BarChart, PieChart } from 'lucide-react';
+import { DollarSign, TrendingDown, TrendingUp, ChevronLeft, ChevronRight, BarChart, PieChart, AreaChart } from 'lucide-react';
 import { MonthlySpendingChart } from '@/components/charts/monthly-spending-chart';
 import { SpendingDonutChart } from '@/components/charts/spending-donut-chart';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '../ui/button';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
+import { ScrollArea } from '../ui/scroll-area';
 
 const meses = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
 
 export function DashboardTab() {
-  const { expenseData } = useFinancialData();
+  const { expenseData, loans, simulatorData } = useFinancialData();
   const [currentDate, setCurrentDate] = useState(new Date());
   
   const year = currentDate.getFullYear();
@@ -53,7 +55,7 @@ export function DashboardTab() {
   
   const saldoChange = prevMonthSaldo !== 0 ? ((saldo - prevMonthSaldo) / Math.abs(prevMonthSaldo)) * 100 : saldo > 0 ? 100 : 0;
   
-  const allMonthsData = meses.map((_, monthIndex) => {
+  const annualChartData = meses.map((_, monthIndex) => {
     const monthData = currentPersonData?.[monthIndex] || { receitas: [], essenciais: [], naoEssenciais: [] };
     const receitas = monthData.receitas.reduce((acc, item) => acc + item.valor, 0);
     const essenciais = monthData.essenciais.reduce((acc, item) => acc + item.valor, 0);
@@ -70,6 +72,31 @@ export function DashboardTab() {
     { name: 'Essenciais', value: essenciais, fill: 'hsl(var(--destructive))' },
     { name: 'Não Essenciais', value: naoEssenciais, fill: 'hsl(var(--accent))' }
   ].filter(d => d.value > 0);
+
+  const cashFlowData = meses.map((_, monthIndex) => {
+    const monthData = currentPersonData?.[monthIndex] || { receitas: [], essenciais: [], naoEssenciais: [] };
+    const receitaTotal = monthData.receitas.reduce((acc, item) => acc + item.valor, 0);
+    const despesasTotais = monthData.essenciais.reduce((acc, i) => acc + i.valor, 0) + monthData.naoEssenciais.reduce((acc, i) => acc + i.valor, 0);
+    const saldoOperacional = receitaTotal - despesasTotais;
+    
+    // Simplistic view of debt payments - assumes financing and loans are paid monthly
+    const financiamentoPago = (simulatorData.parcelasPagas[monthIndex + 1] ? (simulatorData.valorFinanciado / simulatorData.parcelas) : 0) + (simulatorData.amortizacao || 0);
+    const emprestimosPagos = loans.reduce((acc, loan) => {
+      return acc + loan.pagamentos.filter(p => p.pago).reduce((sum, p) => sum + p.valor, 0) / loan.parcelas; // Simplified average
+    }, 0);
+    
+    const pagamentoDividas = financiamentoPago + emprestimosPagos;
+    const fluxoCaixaLivre = saldoOperacional - pagamentoDividas;
+
+    return {
+      name: meses[monthIndex],
+      receitaTotal,
+      despesasTotais,
+      saldoOperacional,
+      pagamentoDividas,
+      fluxoCaixaLivre
+    };
+  });
 
 
   return (
@@ -122,12 +149,49 @@ export function DashboardTab() {
             <TabsList>
                 <TabsTrigger value="evolution"><BarChart className="mr-2 h-4 w-4" /> Evolução no Ano</TabsTrigger>
                 <TabsTrigger value="category"><PieChart className="mr-2 h-4 w-4" /> Despesas por Categoria</TabsTrigger>
+                <TabsTrigger value="cashflow"><AreaChart className="mr-2 h-4 w-4" /> Fluxo de Caixa</TabsTrigger>
             </TabsList>
             <TabsContent value="evolution">
-                <MonthlySpendingChart data={allMonthsData} />
+                <MonthlySpendingChart data={annualChartData} />
             </TabsContent>
             <TabsContent value="category">
                 <SpendingDonutChart data={donutChartData} />
+            </TabsContent>
+            <TabsContent value="cashflow">
+               <Card>
+                <CardHeader>
+                    <CardTitle>Fluxo de Caixa Anual</CardTitle>
+                    <CardDescription>Análise detalhada do seu fluxo de caixa mensal ao longo do ano de {year}.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ScrollArea className="h-[400px]">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead className="w-[100px]">Mês</TableHead>
+                                <TableHead className="text-right">Receita Total</TableHead>
+                                <TableHead className="text-right">Despesas Totais</TableHead>
+                                <TableHead className="text-right">Saldo Operacional</TableHead>
+                                <TableHead className="text-right">Pag. Dívidas</TableHead>
+                                <TableHead className="text-right text-emerald-600 font-bold">Fluxo de Caixa Livre</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {cashFlowData.map((item) => (
+                                <TableRow key={item.name}>
+                                    <TableCell className="font-medium">{item.name}</TableCell>
+                                    <TableCell className="text-right text-emerald-600">{formatCurrency(item.receitaTotal)}</TableCell>
+                                    <TableCell className="text-right text-red-600">{formatCurrency(item.despesasTotais)}</TableCell>
+                                    <TableCell className={`text-right font-medium ${item.saldoOperacional >= 0 ? 'text-foreground' : 'text-red-600'}`}>{formatCurrency(item.saldoOperacional)}</TableCell>
+                                    <TableCell className="text-right text-orange-600">{formatCurrency(item.pagamentoDividas)}</TableCell>
+                                    <TableCell className={`text-right font-bold ${item.fluxoCaixaLivre >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>{formatCurrency(item.fluxoCaixaLivre)}</TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                   </ScrollArea>
+                </CardContent>
+               </Card>
             </TabsContent>
         </Tabs>
     </div>

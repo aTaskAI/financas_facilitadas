@@ -11,6 +11,7 @@ export interface SimulatorData {
   gastosB: number;
   amortizacao: number;
   parcelasPagas: { [key: number]: boolean };
+  valorFinanciado: number;
 }
 
 export interface ExpenseItem {
