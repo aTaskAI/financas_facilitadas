@@ -134,7 +134,7 @@ export function ExpenseTracker() {
           {currentMonthData[categoria].map(item => (
           <div 
               key={item.id} 
-              className="flex gap-2 items-center p-2 rounded-md hover:bg-slate-100"
+              className="flex gap-2 items-center p-2 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800"
           >
               <Input value={item.nome} onChange={e => handleItemChange(categoria, item.id, 'nome', e.target.value)} placeholder="Descrição" />
               <Input type="number" value={item.valor} onChange={e => handleItemChange(categoria, item.id, 'valor', Number(e.target.value))} className="w-32" placeholder="Valor" />
@@ -148,7 +148,7 @@ export function ExpenseTracker() {
           </div>
           ))}
           {newItem[categoria] && (
-               <div className="flex gap-2 items-center p-2 rounded-md bg-slate-50 animate-fade-in-down">
+               <div className="flex gap-2 items-center p-2 rounded-md bg-slate-50 dark:bg-slate-800/50 animate-fade-in-down">
                     <Input 
                         placeholder="Nova descrição" 
                         value={newItem[categoria]?.nome || ''} 
@@ -202,9 +202,9 @@ export function ExpenseTracker() {
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="bg-green-50"><CardHeader><CardTitle>Receitas</CardTitle></CardHeader><CardContent className="text-3xl font-bold text-green-700">{formatCurrency(totalReceitas)}</CardContent></Card>
-        <Card className="bg-red-50"><CardHeader><CardTitle>Despesas</CardTitle></CardHeader><CardContent className="text-3xl font-bold text-red-700">{formatCurrency(totalDespesas)}</CardContent></Card>
-        <Card className={saldo >= 0 ? 'bg-blue-50' : 'bg-orange-50'}><CardHeader><CardTitle>Saldo</CardTitle></CardHeader><CardContent className={`text-3xl font-bold ${saldo >= 0 ? 'text-blue-700' : 'text-orange-700'}`}>{formatCurrency(saldo)}</CardContent></Card>
+        <Card className="bg-green-50 dark:bg-green-900/50"><CardHeader><CardTitle className="text-green-800 dark:text-green-200">Receitas</CardTitle></CardHeader><CardContent className="text-3xl font-bold text-green-700 dark:text-green-400">{formatCurrency(totalReceitas)}</CardContent></Card>
+        <Card className="bg-red-50 dark:bg-red-900/50"><CardHeader><CardTitle className="text-red-800 dark:text-red-200">Despesas</CardTitle></CardHeader><CardContent className="text-3xl font-bold text-red-700 dark:text-red-400">{formatCurrency(totalDespesas)}</CardContent></Card>
+        <Card className={saldo >= 0 ? 'bg-blue-50 dark:bg-blue-900/50' : 'bg-orange-50 dark:bg-orange-900/50'}><CardHeader><CardTitle className={saldo >= 0 ? 'text-blue-800 dark:text-blue-200' : 'text-orange-800 dark:text-orange-200'}>Saldo</CardTitle></CardHeader><CardContent className={`text-3xl font-bold ${saldo >= 0 ? 'text-blue-700 dark:text-blue-400' : 'text-orange-700 dark:text-orange-400'}`}>{formatCurrency(saldo)}</CardContent></Card>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
