@@ -22,9 +22,12 @@ export function ExpenseTracker() {
   // Garantir que a estrutura de dados exista para o mês e ano atuais
   const getSafeMonthData = () => {
     const yearData = currentSubTab.data?.[year];
-    if (yearData && yearData[month]) {
-        return yearData[month];
+    const monthData = yearData?.[month];
+
+    if (monthData) {
+        return monthData;
     }
+
     return { receitas: [], essenciais: [], naoEssenciais: [] };
   }
 
@@ -54,21 +57,21 @@ export function ExpenseTracker() {
   const updateMonthData = (categoria: Categoria, data: any[]) => {
      setExpenseData(prev => {
         const newState = cloneDeep(prev);
-        const currentSubTabData = newState.subTabs[newState.currentSubTabId].data;
+        const subTabToUpdate = newState.subTabs[newState.currentSubTabId];
 
-        if (!currentSubTabData[newState.year]) {
-            currentSubTabData[newState.year] = {};
+        if (!subTabToUpdate.data[newState.year]) {
+            subTabToUpdate.data[newState.year] = {};
         }
         
-        if(!currentSubTabData[newState.year][newState.month]) {
-            currentSubTabData[newState.year][newState.month] = {
+        if(!subTabToUpdate.data[newState.year][newState.month]) {
+            subTabToUpdate.data[newState.year][newState.month] = {
                 receitas: [],
                 essenciais: [],
                 naoEssenciais: [],
             };
         }
         
-        currentSubTabData[newState.year][newState.month][categoria] = data;
+        subTabToUpdate.data[newState.year][newState.month][categoria] = data;
         return newState;
     });
   }

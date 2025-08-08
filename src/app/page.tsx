@@ -9,9 +9,10 @@ import { FinancingSimulator } from '@/components/tabs/financing-simulator';
 import { ExpenseTracker } from '@/components/tabs/expense-tracker';
 import { CouplesFinance } from '@/components/tabs/couples-finance';
 import { LoansTracker } from '@/components/tabs/loans-tracker';
-import { Landmark, Users, HandCoins, PiggyBank, LogOut } from 'lucide-react';
+import { Landmark, Users, HandCoins, PiggyBank, LogOut, LayoutDashboard } from 'lucide-react';
 import { FinancialAdviceModal } from '@/components/ai/financial-advice-modal';
 import { Button } from '@/components/ui/button';
+import Link from 'next/link';
 
 export default function Home() {
   const { user, loading, logout } = useAuth();
@@ -49,8 +50,11 @@ export default function Home() {
           </div>
         </header>
 
-        <Tabs defaultValue="simulator" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 h-auto sm:h-12">
+        <Tabs defaultValue="dashboard" className="w-full">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-5 h-auto sm:h-12">
+            <TabsTrigger value="dashboard" asChild>
+              <Link href="/dashboard"><LayoutDashboard className="h-4 w-4 mr-2" />Dashboard</Link>
+            </TabsTrigger>
             <TabsTrigger value="simulator" className="py-2.5">
               <Landmark className="h-4 w-4 mr-2" />
               Financiamento

@@ -26,20 +26,18 @@ export interface MonthData {
 }
 
 export interface YearData {
-  [month: number]: MonthData;
+    [month: number]: MonthData;
 }
-
-export interface PersonData {
-  [year: number]: YearData;
-}
-
+  
 export interface SubTab {
   nome: string;
   data: {
     [year: number]: {
-      receitas: { [month: number]: ExpenseItem[] };
-      essenciais: { [month: number]: ExpenseItem[] };
-      naoEssenciais: { [month: number]: ExpenseItem[] };
+        [month: number]: {
+            receitas: ExpenseItem[];
+            essenciais: ExpenseItem[];
+            naoEssenciais: ExpenseItem[];
+        }
     };
   };
 }
