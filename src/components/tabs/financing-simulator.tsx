@@ -10,8 +10,8 @@ import { formatCurrency, formatPercentage } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { SimulatorData } from '@/types';
 
-function calculateFinancing(simulatorData: SimulatorData) {
-    const { preco, entradaPct, parcelas, taxaAnual, amortizacao } = simulatorData;
+function calculateFinancing(data: SimulatorData) {
+    const { preco, entradaPct, parcelas, taxaAnual, amortizacao } = data;
     
     const valorEntrada = preco * (entradaPct / 100);
     const valorFinanciado = preco - valorEntrada;
@@ -127,21 +127,20 @@ export function FinancingSimulator() {
     )
   }
   
-  const { nomeA, nomeB, rendaA, rendaB, gastosA, gastosB, amortizacao, parcelasPagas } = simulatorData;
   const { valorEntrada, valorFinanciado, taxaMensal, primeiraPrestacao, tempoNormal, tempoComAmort, economiaTempo, custoRealNormal, custoRealAmortizado, tabela } = results;
 
-  const rendaTotal = rendaA + rendaB;
-  const percentualA = rendaTotal > 0 ? (rendaA / rendaTotal) : 0;
-  const percentualB = rendaTotal > 0 ? (rendaB / rendaTotal) : 0;
+  const rendaTotal = simulatorData.rendaA + simulatorData.rendaB;
+  const percentualA = rendaTotal > 0 ? (simulatorData.rendaA / rendaTotal) : 0;
+  const percentualB = rendaTotal > 0 ? (simulatorData.rendaB / rendaTotal) : 0;
 
   const prestacaoA = primeiraPrestacao * percentualA;
   const prestacaoB = primeiraPrestacao * percentualB;
-  const amortizacaoA = (amortizacao || 0) * percentualA;
-  const amortizacaoB = (amortizacao || 0) * percentualB;
+  const amortizacaoA = (simulatorData.amortizacao || 0) * percentualA;
+  const amortizacaoB = (simulatorData.amortizacao || 0) * percentualB;
   const totalMensalA = prestacaoA + amortizacaoA;
   const totalMensalB = prestacaoB + amortizacaoB;
-  const sobraA = rendaA - gastosA - totalMensalA;
-  const sobraB = rendaB - gastosB - totalMensalB;
+  const sobraA = simulatorData.rendaA - simulatorData.gastosA - totalMensalA;
+  const sobraB = simulatorData.rendaB - simulatorData.gastosB - totalMensalB;
   
   const visibleRows = useMemo(() => {
     if (tabela.length <= 27) return tabela;
@@ -161,9 +160,9 @@ export function FinancingSimulator() {
       </Card>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <Card><CardHeader><CardTitle>{nomeA}</CardTitle></CardHeader><CardContent className="space-y-2"><div><Label>Renda Mensal</Label><Input type="number" value={rendaA} onChange={e => handleInputChange('rendaA', Number(e.target.value))} /></div><div><Label>Gastos Mensais</Label><Input type="number" value={gastosA} onChange={e => handleInputChange('gastosA', Number(e.target.value))} /></div></CardContent></Card>
-        <Card><CardHeader><CardTitle>{nomeB}</CardTitle></CardHeader><CardContent className="space-y-2"><div><Label>Renda Mensal</Label><Input type="number" value={rendaB} onChange={e => handleInputChange('rendaB', Number(e.target.value))} /></div><div><Label>Gastos Mensais</Label><Input type="number" value={gastosB} onChange={e => handleInputChange('gastosB', Number(e.target.value))} /></div></CardContent></Card>
-        <Card className="bg-amber-50 border-amber-200"><CardHeader><CardTitle>Amortização Extra</CardTitle></CardHeader><CardContent><div><Label>Valor Mensal</Label><Input type="number" value={amortizacao} onChange={e => handleInputChange('amortizacao', Number(e.target.value))} /></div><CardDescription className="mt-2">Valor adicional para quitar mais rápido.</CardDescription></CardContent></Card>
+        <Card><CardHeader><CardTitle>{simulatorData.nomeA}</CardTitle></CardHeader><CardContent className="space-y-2"><div><Label>Renda Mensal</Label><Input type="number" value={simulatorData.rendaA} onChange={e => handleInputChange('rendaA', Number(e.target.value))} /></div><div><Label>Gastos Mensais</Label><Input type="number" value={simulatorData.gastosA} onChange={e => handleInputChange('gastosA', Number(e.target.value))} /></div></CardContent></Card>
+        <Card><CardHeader><CardTitle>{simulatorData.nomeB}</CardTitle></CardHeader><CardContent className="space-y-2"><div><Label>Renda Mensal</Label><Input type="number" value={simulatorData.rendaB} onChange={e => handleInputChange('rendaB', Number(e.target.value))} /></div><div><Label>Gastos Mensais</Label><Input type="number" value={simulatorData.gastosB} onChange={e => handleInputChange('gastosB', Number(e.target.value))} /></div></CardContent></Card>
+        <Card className="bg-amber-50 border-amber-200"><CardHeader><CardTitle>Amortização Extra</CardTitle></CardHeader><CardContent><div><Label>Valor Mensal</Label><Input type="number" value={simulatorData.amortizacao} onChange={e => handleInputChange('amortizacao', Number(e.target.value))} /></div><CardDescription className="mt-2">Valor adicional para quitar mais rápido.</CardDescription></CardContent></Card>
       </div>
 
        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -173,8 +172,8 @@ export function FinancingSimulator() {
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card><CardHeader><CardTitle>Divisão Proporcional - {nomeA}</CardTitle></CardHeader><CardContent><div className="flex justify-between"><span>Participação na Renda:</span><span className="font-semibold">{formatPercentage(percentualA * 100)}</span></div><div className="flex justify-between"><span>Parte da Prestação:</span><span className="font-semibold">{formatCurrency(prestacaoA)}</span></div><div className="flex justify-between"><span>Parte da Amortização:</span><span className="font-semibold">{formatCurrency(amortizacaoA)}</span></div><div className="flex justify-between mt-2 pt-2 border-t"><span>Sobra do Salário:</span><span className={`font-bold ${sobraA < 0 ? 'text-red-500' : 'text-green-600'}`}>{formatCurrency(sobraA)}</span></div></CardContent></Card>
-        <Card><CardHeader><CardTitle>Divisão Proporcional - {nomeB}</CardTitle></CardHeader><CardContent><div className="flex justify-between"><span>Participação na Renda:</span><span className="font-semibold">{formatPercentage(percentualB * 100)}</span></div><div className="flex justify-between"><span>Parte da Prestação:</span><span className="font-semibold">{formatCurrency(prestacaoB)}</span></div><div className="flex justify-between"><span>Parte da Amortização:</span><span className="font-semibold">{formatCurrency(amortizacaoB)}</span></div><div className="flex justify-between mt-2 pt-2 border-t"><span>Sobra do Salário:</span><span className={`font-bold ${sobraB < 0 ? 'text-red-500' : 'text-green-600'}`}>{formatCurrency(sobraB)}</span></div></CardContent></Card>
+        <Card><CardHeader><CardTitle>Divisão Proporcional - {simulatorData.nomeA}</CardTitle></CardHeader><CardContent><div className="flex justify-between"><span>Participação na Renda:</span><span className="font-semibold">{formatPercentage(percentualA * 100)}</span></div><div className="flex justify-between"><span>Parte da Prestação:</span><span className="font-semibold">{formatCurrency(prestacaoA)}</span></div><div className="flex justify-between"><span>Parte da Amortização:</span><span className="font-semibold">{formatCurrency(amortizacaoA)}</span></div><div className="flex justify-between mt-2 pt-2 border-t"><span>Sobra do Salário:</span><span className={`font-bold ${sobraA < 0 ? 'text-red-500' : 'text-green-600'}`}>{formatCurrency(sobraA)}</span></div></CardContent></Card>
+        <Card><CardHeader><CardTitle>Divisão Proporcional - {simulatorData.nomeB}</CardTitle></CardHeader><CardContent><div className="flex justify-between"><span>Participação na Renda:</span><span className="font-semibold">{formatPercentage(percentualB * 100)}</span></div><div className="flex justify-between"><span>Parte da Prestação:</span><span className="font-semibold">{formatCurrency(prestacaoB)}</span></div><div className="flex justify-between"><span>Parte da Amortização:</span><span className="font-semibold">{formatCurrency(amortizacaoB)}</span></div><div className="flex justify-between mt-2 pt-2 border-t"><span>Sobra do Salário:</span><span className={`font-bold ${sobraB < 0 ? 'text-red-500' : 'text-green-600'}`}>{formatCurrency(sobraB)}</span></div></CardContent></Card>
       </div>
 
       <Card>
@@ -184,21 +183,21 @@ export function FinancingSimulator() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Pago</TableHead><TableHead>Parcela</TableHead><TableHead>Saldo Devedor</TableHead><TableHead>Amortização</TableHead><TableHead>Juros</TableHead><TableHead>Prestação</TableHead><TableHead>{nomeA}</TableHead><TableHead>{nomeB}</TableHead>
+                  <TableHead>Pago</TableHead><TableHead>Parcela</TableHead><TableHead>Saldo Devedor</TableHead><TableHead>Amortização</TableHead><TableHead>Juros</TableHead><TableHead>Prestação</TableHead><TableHead>{simulatorData.nomeA}</TableHead><TableHead>{simulatorData.nomeB}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {visibleRows.map((row, index) => {
                   const parteA = row.prestacao * percentualA;
                   const parteB = row.prestacao * percentualB;
-                  const isChecked = parcelasPagas[row.parcela] || false;
+                  const isChecked = simulatorData.parcelasPagas[row.parcela] || false;
                   
                   return (
                     <React.Fragment key={row.parcela}>
                      {index === 24 && tempoNormal > 27 && (
                        <TableRow><TableCell colSpan={8} className="text-center">...</TableCell></TableRow>
                      )}
-                    <TableRow className={row.parcela <= tempoComAmort && (amortizacao || 0) > 0 ? "bg-amber-50" : ""}>
+                    <TableRow className={row.parcela <= tempoComAmort && (simulatorData.amortizacao || 0) > 0 ? "bg-amber-50" : ""}>
                       <TableCell><Checkbox checked={isChecked} onCheckedChange={(checked) => handleCheckboxChange(row.parcela, !!checked)} /></TableCell>
                       <TableCell>{row.parcela}</TableCell><TableCell>{formatCurrency(row.saldoDevedor)}</TableCell><TableCell>{formatCurrency(row.amortizacao)}</TableCell><TableCell>{formatCurrency(row.juros)}</TableCell><TableCell>{formatCurrency(row.prestacao)}</TableCell><TableCell>{formatCurrency(parteA)}</TableCell><TableCell>{formatCurrency(parteB)}</TableCell>
                     </TableRow>
