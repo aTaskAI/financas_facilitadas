@@ -4,7 +4,7 @@ import { useFinancialData } from '@/contexts/financial-data-context';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { PlusCircle, Trash2, UserPlus, HandCoins, PiggyBank, ReceiptText } from 'lucide-react';
+import { PlusCircle, Trash2, UserPlus, HandCoins, PiggyBank, ReceiptText, Check } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SpendingChart } from '../charts/spending-chart';
@@ -14,12 +14,18 @@ import { cloneDeep } from 'lodash';
 
 type Categoria = 'receitas' | 'essenciais' | 'naoEssenciais';
 
+interface NewItemState {
+  nome: string;
+  valor: string;
+}
+
 export function ExpenseTracker() {
   const { expenseData, setExpenseData } = useFinancialData();
   const { subTabs, currentSubTabId, year, month } = expenseData;
   const currentSubTab = subTabs[currentSubTabId] || { nome: '', data: {} };
   
-  // Garantir que a estrutura de dados exista para o mês e ano atuais
+  const [newItem, setNewItem] = useState<{ [key in Categoria]?: NewItemState }>({});
+
   const getSafeMonthData = () => {
     const yearData = currentSubTab.data?.[year];
     const monthData = yearData?.[month];
@@ -82,16 +88,32 @@ export function ExpenseTracker() {
     );
     updateMonthData(categoria, newItems);
   };
+  
+  const handleNewItemChange = (categoria: Categoria, field: 'nome' | 'valor', value: string) => {
+    setNewItem(prev => ({
+        ...prev,
+        [categoria]: {
+            ...prev[categoria],
+            [field]: value
+        }
+    }));
+  };
 
-  const addItem = (categoria: Categoria) => {
-    const nome = prompt(`Nome da nova ${categoria === 'receitas' ? 'receita' : 'despesa'}:`);
-    if (nome) {
-      const newItem = { id: Date.now(), nome, valor: 0 };
-      const newItems = [...currentMonthData[categoria], newItem];
-      updateMonthData(categoria, newItems);
+  const saveNewItem = (categoria: Categoria) => {
+    const item = newItem[categoria];
+    if (item && item.nome && item.valor) {
+        const newItemData = { id: Date.now(), nome: item.nome, valor: Number(item.valor) };
+        const newItems = [...currentMonthData[categoria], newItemData];
+        updateMonthData(categoria, newItems);
+        setNewItem(prev => {
+            const newState = {...prev};
+            delete newState[categoria];
+            return newState;
+        });
     }
   };
-  
+
+
   const removeItem = (categoria: Categoria, id: number) => {
     const newItems = currentMonthData[categoria].filter(item => item.id !== id);
     updateMonthData(categoria, newItems);
@@ -164,16 +186,35 @@ export function ExpenseTracker() {
                 variant="ghost" 
                 size="icon" 
                 onClick={() => removeItem(categoria, item.id)}
-                // Impede que o clique no botão inicie o evento de arrastar
                 onMouseDown={(e) => e.stopPropagation()}
               >
                 <Trash2 className="h-4 w-4 text-red-500" />
               </Button>
           </div>
           ))}
+          {newItem[categoria] && (
+               <div className="flex gap-2 items-center p-2 rounded-md bg-slate-50 animate-fade-in-down">
+                    <Input 
+                        placeholder="Nova descrição" 
+                        value={newItem[categoria]?.nome || ''} 
+                        onChange={(e) => handleNewItemChange(categoria, 'nome', e.target.value)}
+                        autoFocus
+                    />
+                    <Input 
+                        type="number" 
+                        placeholder="Valor" 
+                        value={newItem[categoria]?.valor || ''} 
+                        onChange={(e) => handleNewItemChange(categoria, 'valor', e.target.value)}
+                        className="w-32"
+                    />
+                    <Button variant="ghost" size="icon" onClick={() => saveNewItem(categoria)}>
+                        <Check className="h-4 w-4 text-green-500" />
+                    </Button>
+               </div>
+          )}
       </CardContent>
       <CardFooter>
-        <Button onClick={() => addItem(categoria)} className="w-full">
+        <Button onClick={() => setNewItem(prev => ({...prev, [categoria]: {nome: '', valor: ''}}))} className="w-full">
             <PlusCircle className="mr-2 h-4 w-4" /> Adicionar
         </Button>
       </CardFooter>
