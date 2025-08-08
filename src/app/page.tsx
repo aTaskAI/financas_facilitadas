@@ -49,8 +49,12 @@ export default function Home() {
   useEffect(() => {
     const handleHashChange = () => {
       const hash = window.location.hash.replace('#', '');
-      const validTab = navItems.some(item => item.value === hash);
-      setActiveTab(validTab ? hash : 'dashboard');
+      if (hash) {
+        const validTab = navItems.some(item => item.value === hash);
+        setActiveTab(validTab ? hash : 'dashboard');
+      } else {
+        setActiveTab('dashboard');
+      }
     };
     
     window.addEventListener('hashchange', handleHashChange);
@@ -75,9 +79,6 @@ export default function Home() {
             <SidebarHeader>
               <div className="flex items-center gap-2 px-2">
                  <PiggyBank className="h-8 w-8 text-primary" />
-                  <h1 className="text-xl font-bold font-headline text-primary">
-                    Prospera
-                  </h1>
               </div>
             </SidebarHeader>
             <SidebarMenu>
@@ -99,14 +100,16 @@ export default function Home() {
         <SidebarInset>
            <div className="container mx-auto p-4 sm:p-8">
             <header className="flex justify-between items-center mb-6">
-              <SidebarTrigger>
-                <Menu />
-              </SidebarTrigger>
-              <div className="flex items-center gap-3">
-                 <PiggyBank className="h-10 w-10 text-primary" />
-                  <h1 className="text-xl sm:text-3xl font-bold font-headline text-primary">
-                    Prospera
-                  </h1>
+              <div className="flex items-center gap-2">
+                <SidebarTrigger>
+                  <Menu />
+                </SidebarTrigger>
+                <div className="flex items-center gap-3">
+                   <PiggyBank className="h-10 w-10 text-primary" />
+                    <h1 className="text-xl sm:text-3xl font-bold font-headline text-primary">
+                      Prospera
+                    </h1>
+                </div>
               </div>
               <div className="flex items-center gap-2">
                 {!isMobile && <FinancialAdviceModal />}
