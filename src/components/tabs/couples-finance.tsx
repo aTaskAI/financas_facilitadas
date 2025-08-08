@@ -65,9 +65,9 @@ export function CouplesFinance() {
         <CardHeader>
           <CardTitle>Configuração Mensal</CardTitle>
         </CardHeader>
-        <CardContent className="flex gap-4 items-center">
+        <CardContent className="flex flex-wrap gap-4 items-center">
             <Select value={String(month)} onValueChange={(val) => setCouplesData({ ...couplesData, month: Number(val) })}>
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-full sm:w-[180px]">
                 <SelectValue placeholder="Mês" />
               </SelectTrigger>
               <SelectContent>
@@ -75,7 +75,7 @@ export function CouplesFinance() {
               </SelectContent>
             </Select>
              <Select value={String(year)} onValueChange={(val) => setCouplesData({ ...couplesData, year: Number(val) })}>
-              <SelectTrigger className="w-[120px]">
+              <SelectTrigger className="w-full sm:w-[120px]">
                 <SelectValue placeholder="Ano" />
               </SelectTrigger>
               <SelectContent>
@@ -137,17 +137,17 @@ export function CouplesFinance() {
         <Card>
           <CardHeader><CardTitle>Resumo Individual</CardTitle></CardHeader>
           <CardContent className="space-y-4">
-            <div className="p-4 rounded-lg bg-green-50 border border-green-200">
-              <h4 className="font-semibold text-green-800">{currentMonthData.nomeA}</h4>
-              <div className="flex justify-between"><span>Contas:</span><span>{formatCurrency(totalContasA)}</span></div>
-              <div className="flex justify-between"><span>Poupança:</span><span>{formatCurrency(poupancaA)}</span></div>
-              <div className="flex justify-between font-bold mt-2 pt-2 border-t"><span>Sobra:</span><span className={sobraA < 0 ? 'text-red-600' : 'text-green-600'}>{formatCurrency(sobraA)}</span></div>
+            <div className="p-4 rounded-lg bg-green-50 border border-green-200 dark:bg-green-900/50 dark:border-green-800">
+              <h4 className="font-semibold text-green-800 dark:text-green-200">{currentMonthData.nomeA}</h4>
+              <div className="flex justify-between text-green-900 dark:text-green-100"><span>Contas:</span><span>{formatCurrency(totalContasA)}</span></div>
+              <div className="flex justify-between text-green-900 dark:text-green-100"><span>Poupança:</span><span>{formatCurrency(poupancaA)}</span></div>
+              <div className="flex justify-between font-bold mt-2 pt-2 border-t border-green-300 dark:border-green-700"><span>Sobra:</span><span className={sobraA < 0 ? 'text-red-500' : 'text-green-600 dark:text-green-400'}>{formatCurrency(sobraA)}</span></div>
             </div>
-             <div className="p-4 rounded-lg bg-blue-50 border border-blue-200">
-              <h4 className="font-semibold text-blue-800">{currentMonthData.nomeB}</h4>
-              <div className="flex justify-between"><span>Contas:</span><span>{formatCurrency(totalContasB)}</span></div>
-              <div className="flex justify-between"><span>Poupança:</span><span>{formatCurrency(poupancaB)}</span></div>
-              <div className="flex justify-between font-bold mt-2 pt-2 border-t"><span>Sobra:</span><span className={sobraB < 0 ? 'text-red-600' : 'text-blue-600'}>{formatCurrency(sobraB)}</span></div>
+             <div className="p-4 rounded-lg bg-blue-50 border border-blue-200 dark:bg-blue-900/50 dark:border-blue-800">
+              <h4 className="font-semibold text-blue-800 dark:text-blue-200">{currentMonthData.nomeB}</h4>
+              <div className="flex justify-between text-blue-900 dark:text-blue-100"><span>Contas:</span><span>{formatCurrency(totalContasB)}</span></div>
+              <div className="flex justify-between text-blue-900 dark:text-blue-100"><span>Poupança:</span><span>{formatCurrency(poupancaB)}</span></div>
+              <div className="flex justify-between font-bold mt-2 pt-2 border-t border-blue-300 dark:border-blue-700"><span>Sobra:</span><span className={sobraB < 0 ? 'text-red-500' : 'text-blue-600 dark:text-blue-400'}>{formatCurrency(sobraB)}</span></div>
             </div>
           </CardContent>
         </Card>

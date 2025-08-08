@@ -124,7 +124,7 @@ export function FinancingSimulator() {
           <CardTitle>🏠 Dados do Imóvel</CardTitle>
         </CardHeader>
         <CardContent>
-           <div className="grid grid-cols-2 gap-4">
+           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div><Label htmlFor="preco">Preço do Imóvel (R$)</Label><Input id="preco" type="number" value={simulatorData.preco} onChange={e => handleInputChange('preco', Number(e.target.value))} /></div>
             <div><Label htmlFor="entrada">Entrada (%)</Label><Input id="entrada" type="number" value={simulatorData.entradaPct} onChange={e => handleInputChange('entradaPct', Number(e.target.value))} /></div>
             <div><Label htmlFor="parcelas">Parcelas (meses)</Label><Input id="parcelas" type="number" value={simulatorData.parcelas} onChange={e => handleInputChange('parcelas', Number(e.target.value))} /></div>
@@ -159,7 +159,7 @@ export function FinancingSimulator() {
     <div className="space-y-6">
       <Card>
         <CardHeader><CardTitle>🏠 Dados do Imóvel e Financiamento</CardTitle></CardHeader>
-        <CardContent className="grid grid-cols-2 gap-4">
+        <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div><Label htmlFor="preco">Preço do Imóvel (R$)</Label><Input id="preco" type="number" value={simulatorData.preco} onChange={e => handleInputChange('preco', Number(e.target.value))} /></div>
           <div><Label htmlFor="entrada">Entrada (%)</Label><Input id="entrada" type="number" value={simulatorData.entradaPct} onChange={e => handleInputChange('entradaPct', Number(e.target.value))} /></div>
           <div><Label htmlFor="parcelas">Parcelas (meses)</Label><Input id="parcelas" type="number" value={simulatorData.parcelas} onChange={e => handleInputChange('parcelas', Number(e.target.value))} /></div>
@@ -170,12 +170,12 @@ export function FinancingSimulator() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <Card><CardHeader><CardTitle>{simulatorData.nomeA}</CardTitle></CardHeader><CardContent className="space-y-2"><div><Label>Renda Mensal</Label><Input type="number" value={simulatorData.rendaA} onChange={e => handleInputChange('rendaA', Number(e.target.value))} /></div><div><Label>Gastos Mensais</Label><Input type="number" value={simulatorData.gastosA} onChange={e => handleInputChange('gastosA', Number(e.target.value))} /></div></CardContent></Card>
         <Card><CardHeader><CardTitle>{simulatorData.nomeB}</CardTitle></CardHeader><CardContent className="space-y-2"><div><Label>Renda Mensal</Label><Input type="number" value={simulatorData.rendaB} onChange={e => handleInputChange('rendaB', Number(e.target.value))} /></div><div><Label>Gastos Mensais</Label><Input type="number" value={simulatorData.gastosB} onChange={e => handleInputChange('gastosB', Number(e.target.value))} /></div></CardContent></Card>
-        <Card className="bg-amber-50 border-amber-200"><CardHeader><CardTitle>Amortização Extra</CardTitle></CardHeader><CardContent><div><Label>Valor Mensal</Label><Input type="number" value={simulatorData.amortizacao} onChange={e => handleInputChange('amortizacao', Number(e.target.value))} /></div><CardDescription className="mt-2">Valor adicional para quitar mais rápido.</CardDescription></CardContent></Card>
+        <Card className="bg-amber-50 border-amber-200 dark:bg-amber-900 dark:border-amber-800"><CardHeader><CardTitle className="text-amber-900 dark:text-amber-100">Amortização Extra</CardTitle></CardHeader><CardContent><div><Label className="text-amber-800 dark:text-amber-200">Valor Mensal</Label><Input type="number" value={simulatorData.amortizacao} onChange={e => handleInputChange('amortizacao', Number(e.target.value))} /></div><CardDescription className="mt-2 text-amber-700 dark:text-amber-300">Valor adicional para quitar mais rápido.</CardDescription></CardContent></Card>
       </div>
 
        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <Card><CardHeader><CardTitle>Valores Iniciais</CardTitle></CardHeader><CardContent><div className="flex justify-between"><span>Valor da Entrada:</span><span className="font-semibold">{formatCurrency(valorEntrada)}</span></div><div className="flex justify-between"><span>Valor Financiado:</span><span className="font-semibold">{formatCurrency(valorFinanciado)}</span></div><div className="flex justify-between"><span>Primeira Prestação:</span><span className="font-semibold">{formatCurrency(primeiraPrestacao)}</span></div><div className="flex justify-between"><span>Taxa Mensal:</span><span className="font-semibold">{formatPercentage(taxaMensal * 100)}</span></div></CardContent></Card>
-          <Card className="bg-amber-50 border-amber-200"><CardHeader><CardTitle>Custos Totais</CardTitle></CardHeader><CardContent><div className="flex justify-between"><span>Custo Normal:</span><span className="font-semibold">{formatCurrency(custoRealNormal)}</span></div><div className="flex justify-between"><span>Custo com Amortização:</span><span className="font-semibold text-green-600">{formatCurrency(custoRealAmortizado)}</span></div></CardContent></Card>
+          <Card className="bg-amber-50 border-amber-200 dark:bg-amber-900 dark:border-amber-800"><CardHeader><CardTitle className="text-amber-900 dark:text-amber-100">Custos Totais</CardTitle></CardHeader><CardContent><div className="flex justify-between text-amber-900 dark:text-amber-100"><span>Custo Normal:</span><span className="font-semibold">{formatCurrency(custoRealNormal)}</span></div><div className="flex justify-between text-green-700 dark:text-green-400"><span>Custo com Amortização:</span><span className="font-semibold">{formatCurrency(custoRealAmortizado)}</span></div></CardContent></Card>
           <Card><CardHeader><CardTitle>Tempo de Quitação</CardTitle></CardHeader><CardContent><div className="flex justify-between"><span>Normal:</span><span className="font-semibold">{(tempoNormal / 12).toFixed(1)} anos</span></div><div className="flex justify-between"><span>Com Amortização:</span><span className="font-semibold text-green-600">{(tempoComAmort / 12).toFixed(1)} anos</span></div><div className="flex justify-between"><span>Economia:</span><span className="font-semibold text-green-600">{(economiaTempo / 12).toFixed(1)} anos</span></div></CardContent></Card>
       </div>
       
@@ -208,7 +208,7 @@ export function FinancingSimulator() {
                      {index === 24 && tempoNormal > 27 && (
                        <TableRow><TableCell colSpan={8} className="text-center">...</TableCell></TableRow>
                      )}
-                    <TableRow className={row.parcela <= tempoComAmort && (simulatorData.amortizacao || 0) > 0 ? "bg-amber-50" : ""}>
+                    <TableRow className={row.parcela <= tempoComAmort && (simulatorData.amortizacao || 0) > 0 ? "bg-amber-50 dark:bg-amber-900/50" : ""}>
                       <TableCell><Checkbox checked={isChecked} onCheckedChange={(checked) => handleCheckboxChange(row.parcela, !!checked)} /></TableCell>
                       <TableCell>{row.parcela}</TableCell>
                       <TableCell>{formatCurrency(row.saldoDevedor)}</TableCell>
