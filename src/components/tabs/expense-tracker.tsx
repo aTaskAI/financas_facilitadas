@@ -4,13 +4,14 @@ import { useFinancialData } from '@/contexts/financial-data-context';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { PlusCircle, Trash2, UserPlus, HandCoins, PiggyBank, ReceiptText, Check } from 'lucide-react';
+import { PlusCircle, Trash2, UserPlus, HandCoins, PiggyBank, ReceiptText, Check, Copy } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SpendingChart } from '../charts/spending-chart';
 import { useState } from 'react';
 import { cloneDeep } from 'lodash';
 import { Badge } from '../ui/badge';
+import { useToast } from '@/hooks/use-toast';
 
 type Categoria = 'receitas' | 'essenciais' | 'naoEssenciais';
 type ExpenseCategory = 'Moradia' | 'Transporte' | 'Alimentação' | 'Saúde' | 'Educação' | 'Contas' | 'Lazer' | 'Compras' | 'Restaurantes' | 'Viagens' | 'Assinaturas' | 'Outros';
@@ -29,6 +30,7 @@ export function ExpenseTracker() {
   const { expenseData, setExpenseData } = useFinancialData();
   const { subTabs, currentSubTabId, year, month } = expenseData;
   const currentSubTab = subTabs[currentSubTabId] || { nome: '', data: {} };
+  const { toast } = useToast();
   
   const [newItem, setNewItem] = useState<{ [key in Categoria]?: NewItemState }>({});
 
@@ -123,6 +125,55 @@ export function ExpenseTracker() {
     updateMonthData(categoria, newItems);
   };
 
+  const copyFromPreviousMonth = () => {
+    const prevDate = new Date(year, month - 1);
+    const prevYear = prevDate.getFullYear();
+    const prevMonth = prevDate.getMonth();
+
+    const previousMonthData = currentSubTab.data?.[prevYear]?.[prevMonth];
+
+    if (!previousMonthData) {
+        toast({
+            title: "Nenhum dado encontrado",
+            description: "Não há dados do mês anterior para copiar.",
+            variant: "destructive"
+        });
+        return;
+    }
+
+    setExpenseData(prev => {
+      const newState = cloneDeep(prev);
+      const subTabToUpdate = newState.subTabs[newState.currentSubTabId];
+
+      if (!subTabToUpdate.data[newState.year]) {
+        subTabToUpdate.data[newState.year] = {};
+      }
+      
+      if (!subTabToUpdate.data[newState.year][newState.month]) {
+        subTabToUpdate.data[newState.year][newState.month] = {
+          receitas: [],
+          essenciais: [],
+          naoEssenciais: [],
+        };
+      }
+      
+      const currentData = subTabToUpdate.data[newState.year][newState.month];
+
+      const copyItems = (items: any[]) => items.map(item => ({...item, id: Date.now() + Math.random()}));
+
+      currentData.receitas = [...currentData.receitas, ...copyItems(previousMonthData.receitas || [])];
+      currentData.essenciais = [...currentData.essenciais, ...copyItems(previousMonthData.essenciais || [])];
+      currentData.naoEssenciais = [...currentData.naoEssenciais, ...copyItems(previousMonthData.naoEssenciais || [])];
+      
+      return newState;
+    });
+
+    toast({
+        title: "Sucesso!",
+        description: "Os dados do mês anterior foram copiados para o mês atual."
+    });
+  }
+
   const totalReceitas = currentMonthData.receitas.reduce((acc, item) => acc + item.valor, 0);
   const totalDespesas = [...currentMonthData.essenciais, ...currentMonthData.naoEssenciais].reduce((acc, item) => acc + item.valor, 0);
   const saldo = totalReceitas - totalDespesas;
@@ -204,6 +255,9 @@ export function ExpenseTracker() {
           </Select>
           <Button variant="outline" onClick={addSubTab}><UserPlus className="mr-2 h-4 w-4" /> Nova Pessoa</Button>
           <div className="flex-grow hidden sm:block" />
+           <Button variant="outline" onClick={copyFromPreviousMonth}>
+            <Copy className="mr-2 h-4 w-4" /> Puxar do Mês Anterior
+          </Button>
           <Select value={String(month)} onValueChange={(val) => setExpenseData({ ...expenseData, month: Number(val) })}>
             <SelectTrigger className="w-full sm:w-[180px]"><SelectValue placeholder="Mês" /></SelectTrigger>
             <SelectContent>
