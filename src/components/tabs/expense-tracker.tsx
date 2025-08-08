@@ -18,7 +18,17 @@ export function ExpenseTracker() {
   const { expenseData, setExpenseData } = useFinancialData();
   const { subTabs, currentSubTabId, year, month } = expenseData;
   const currentSubTab = subTabs[currentSubTabId] || { nome: '', data: {} };
-  const currentMonthData = currentSubTab.data?.[year]?.[month] || { receitas: [], essenciais: [], naoEssenciais: [] };
+  
+  // Garantir que a estrutura de dados exista para o mês e ano atuais
+  const getSafeMonthData = () => {
+    const yearData = currentSubTab.data?.[year];
+    if (yearData && yearData[month]) {
+        return yearData[month];
+    }
+    return { receitas: [], essenciais: [], naoEssenciais: [] };
+  }
+
+  const currentMonthData = getSafeMonthData();
 
   const [draggedItem, setDraggedItem] = useState<{ id: number, categoria: Categoria } | null>(null);
 
@@ -47,19 +57,18 @@ export function ExpenseTracker() {
         const currentSubTabData = newState.subTabs[newState.currentSubTabId].data;
 
         if (!currentSubTabData[newState.year]) {
-            currentSubTabData[newState.year] = {
-                receitas: {},
-                essenciais: {},
-                naoEssenciais: {},
-            };
-            for (let i = 0; i < 12; i++) {
-                currentSubTabData[newState.year].receitas[i] = [];
-                currentSubTabData[newState.year].essenciais[i] = [];
-                currentSubTabData[newState.year].naoEssenciais[i] = [];
-            }
+            currentSubTabData[newState.year] = {};
         }
         
-        currentSubTabData[newState.year][categoria][newState.month] = data;
+        if(!currentSubTabData[newState.year][newState.month]) {
+            currentSubTabData[newState.year][newState.month] = {
+                receitas: [],
+                essenciais: [],
+                naoEssenciais: [],
+            };
+        }
+        
+        currentSubTabData[newState.year][newState.month][categoria] = data;
         return newState;
     });
   }
@@ -99,7 +108,9 @@ export function ExpenseTracker() {
 
     setExpenseData(prev => {
       const newState = cloneDeep(prev);
-      const dataForMonth = newState.subTabs[newState.currentSubTabId].data[newState.year][newState.month];
+      const dataForMonth = newState.subTabs[newState.currentSubTabId].data[newState.year]?.[newState.month];
+
+      if(!dataForMonth) return prev;
 
       const sourceItems = dataForMonth[sourceCategoria];
       const itemToMove = sourceItems.find(item => item.id === id);
@@ -134,7 +145,7 @@ export function ExpenseTracker() {
       </CardHeader>
       <CardContent className="space-y-2 flex-grow">
         {currentMonthData[categoria].map(item => (
-          <div key={item.id} draggable onDragStart={(e) => handleDragStart(e, item.id, categoria)} className="flex gap-2 items-center p-2 rounded-md hover:bg-slate-100 cursor-move">
+          <div key={item.id} draggable onDragStart={(e) => handleDragStart(e, item.id, categoria)} className="flex gap-2 items-center p-2 rounded-md hover:bg-slate-100 cursor-move animate-fade-in-down">
             <Input value={item.nome} onChange={e => handleItemChange(categoria, item.id, 'nome', e.target.value)} placeholder="Descrição" />
             <Input type="number" value={item.valor} onChange={e => handleItemChange(categoria, item.id, 'valor', Number(e.target.value))} className="w-32" placeholder="Valor" />
             <Button variant="ghost" size="icon" onClick={() => removeItem(categoria, item.id)}><Trash2 className="h-4 w-4 text-red-500" /></Button>
