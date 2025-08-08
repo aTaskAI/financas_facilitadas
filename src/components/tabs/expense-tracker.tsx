@@ -4,11 +4,13 @@ import { useFinancialData } from '@/contexts/financial-data-context';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { PlusCircle, Trash2, UserPlus, Users, HandCoins, PiggyBank, ReceiptText, BarChart } from 'lucide-react';
+import { PlusCircle, Trash2, UserPlus, HandCoins, PiggyBank, ReceiptText } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SpendingChart } from '../charts/spending-chart';
 import { useState } from 'react';
+import { cloneDeep } from 'lodash';
+
 
 type Categoria = 'receitas' | 'essenciais' | 'naoEssenciais';
 
@@ -38,6 +40,29 @@ export function ExpenseTracker() {
       }));
     }
   };
+  
+  const updateMonthData = (categoria: Categoria, data: any[]) => {
+     setExpenseData(prev => {
+        const newState = cloneDeep(prev);
+        const currentSubTabData = newState.subTabs[newState.currentSubTabId].data;
+
+        if (!currentSubTabData[newState.year]) {
+            currentSubTabData[newState.year] = {
+                receitas: {},
+                essenciais: {},
+                naoEssenciais: {},
+            };
+            for (let i = 0; i < 12; i++) {
+                currentSubTabData[newState.year].receitas[i] = [];
+                currentSubTabData[newState.year].essenciais[i] = [];
+                currentSubTabData[newState.year].naoEssenciais[i] = [];
+            }
+        }
+        
+        currentSubTabData[newState.year][categoria][newState.month] = data;
+        return newState;
+    });
+  }
 
   const handleItemChange = (categoria: Categoria, id: number, field: 'nome' | 'valor', value: string | number) => {
     const newItems = currentMonthData[categoria].map(item =>
@@ -50,7 +75,8 @@ export function ExpenseTracker() {
     const nome = prompt(`Nome da nova ${categoria === 'receitas' ? 'receita' : 'despesa'}:`);
     if (nome) {
       const newItem = { id: Date.now(), nome, valor: 0 };
-      updateMonthData(categoria, [...currentMonthData[categoria], newItem]);
+      const newItems = [...currentMonthData[categoria], newItem];
+      updateMonthData(categoria, newItems);
     }
   };
   
@@ -58,22 +84,6 @@ export function ExpenseTracker() {
     const newItems = currentMonthData[categoria].filter(item => item.id !== id);
     updateMonthData(categoria, newItems);
   };
-  
-  const updateMonthData = (categoria: Categoria, data: any[]) => {
-     setExpenseData(prev => {
-      const newSubTabs = { ...prev.subTabs };
-      if (!newSubTabs[prev.currentSubTabId].data[prev.year]) {
-        newSubTabs[prev.currentSubTabId].data[prev.year] = { receitas: {}, essenciais: {}, naoEssenciais: {} };
-        for (let i = 0; i < 12; i++) {
-          newSubTabs[prev.currentSubTabId].data[prev.year].receitas[i] = [];
-          newSubTabs[prev.currentSubTabId].data[prev.year].essenciais[i] = [];
-          newSubTabs[prev.currentSubTabId].data[prev.year].naoEssenciais[i] = [];
-        }
-      }
-      newSubTabs[prev.currentSubTabId].data[prev.year][month][categoria] = data;
-      return { ...prev, subTabs: newSubTabs };
-    });
-  }
 
   const handleDragStart = (e: React.DragEvent<HTMLDivElement>, id: number, categoria: Categoria) => {
     setDraggedItem({ id, categoria });
@@ -85,23 +95,21 @@ export function ExpenseTracker() {
     if (!draggedItem) return;
 
     const { id, categoria: sourceCategoria } = draggedItem;
-    if (sourceCategoria === targetCategoria) return; // No change if dropped in the same category
-
-    // Find and remove item from source
-    const sourceItems = [...currentMonthData[sourceCategoria]];
-    const itemToMove = sourceItems.find(item => item.id === id);
-    if (!itemToMove) return;
-
-    const newSourceItems = sourceItems.filter(item => item.id !== id);
-    
-    // Add item to target
-    const newTargetItems = [...currentMonthData[targetCategoria], itemToMove];
+    if (sourceCategoria === targetCategoria) return;
 
     setExpenseData(prev => {
-      const newSubTabs = { ...prev.subTabs };
-      newSubTabs[prev.currentSubTabId].data[prev.year][month][sourceCategoria] = newSourceItems;
-      newSubTabs[prev.currentSubTabId].data[prev.year][month][targetCategoria] = newTargetItems;
-      return { ...prev, subTabs: newSubTabs };
+      const newState = cloneDeep(prev);
+      const dataForMonth = newState.subTabs[newState.currentSubTabId].data[newState.year][newState.month];
+
+      const sourceItems = dataForMonth[sourceCategoria];
+      const itemToMove = sourceItems.find(item => item.id === id);
+
+      if (!itemToMove) return prev; 
+
+      dataForMonth[sourceCategoria] = sourceItems.filter(item => item.id !== id);
+      dataForMonth[targetCategoria].push(itemToMove);
+      
+      return newState;
     });
 
     setDraggedItem(null);
