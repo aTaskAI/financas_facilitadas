@@ -11,13 +11,15 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 
-export default function LoginPage() {
-  const { user, signInWithGoogle, signInWithEmail, loading } = useAuth();
+export default function SignupPage() {
+  const { user, signUpWithEmail, loading } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
 
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -26,16 +28,33 @@ export default function LoginPage() {
     }
   }, [user, router]);
   
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (password !== confirmPassword) {
+      toast({
+        title: "Erro",
+        description: "As senhas não correspondem.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (password.length < 6) {
+       toast({
+        title: "Erro",
+        description: "A senha deve ter pelo menos 6 caracteres.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setIsSubmitting(true);
     try {
-      await signInWithEmail(email, password);
+      await signUpWithEmail(name, email, password);
       router.push('/');
     } catch (error: any) {
       toast({
-        title: "Erro de Login",
-        description: error.message || "Não foi possível fazer o login. Verifique seu email e senha.",
+        title: "Erro no Cadastro",
+        description: error.message || "Não foi possível criar a conta. Tente novamente.",
         variant: "destructive",
       });
     } finally {
@@ -45,14 +64,6 @@ export default function LoginPage() {
 
   const isLoading = loading || isSubmitting;
 
-  if (loading && !isSubmitting) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
-    );
-  }
-
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-100 dark:bg-gray-900 p-4">
       <Card className="w-full max-w-md">
@@ -60,13 +71,17 @@ export default function LoginPage() {
           <div className="flex justify-center mb-4">
             <PiggyBank className="h-12 w-12 text-primary" />
           </div>
-          <CardTitle className="text-2xl">Bem-vindo de volta!</CardTitle>
+          <CardTitle className="text-2xl">Crie sua Conta</CardTitle>
           <CardDescription>
-            Acesse sua conta para continuar sua jornada financeira.
+            Comece sua jornada para a saúde financeira hoje mesmo.
           </CardDescription>
         </CardHeader>
-        <form onSubmit={handleLogin}>
+        <form onSubmit={handleSignup}>
           <CardContent className="space-y-4">
+            <div className="space-y-2">
+                <Label htmlFor="name">Nome</Label>
+                <Input id="name" type="text" placeholder="Seu nome" required value={name} onChange={e => setName(e.target.value)} />
+            </div>
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input id="email" type="email" placeholder="seu@email.com" required value={email} onChange={e => setEmail(e.target.value)} />
@@ -75,38 +90,19 @@ export default function LoginPage() {
               <Label htmlFor="password">Senha</Label>
               <Input id="password" type="password" required value={password} onChange={e => setPassword(e.target.value)} />
             </div>
-            <div className="flex items-center justify-end">
-              <Link href="/forgot-password">
-                <Button variant="link" type="button" className="text-xs px-0">Esqueceu sua senha?</Button>
-              </Link>
+            <div className="space-y-2">
+              <Label htmlFor="confirm-password">Confirmar Senha</Label>
+              <Input id="confirm-password" type="password" required value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} />
             </div>
           </CardContent>
           <CardFooter className="flex flex-col gap-4">
             <Button type="submit" disabled={isLoading} className="w-full">
-              {isLoading ? <Loader2 className="animate-spin" /> : 'Entrar'}
-            </Button>
-             <div className="relative w-full">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">
-                  Ou continue com
-                </span>
-              </div>
-            </div>
-             <Button
-              variant="outline"
-              onClick={signInWithGoogle}
-              disabled={isLoading}
-              className="w-full"
-            >
-              {isLoading ? <Loader2 className="animate-spin" /> : 'Google'}
+              {isLoading ? <Loader2 className="animate-spin" /> : 'Cadastrar'}
             </Button>
              <p className="text-center text-sm text-muted-foreground">
-                Não tem uma conta?{' '}
-                <Link href="/signup" className="underline underline-offset-4 hover:text-primary">
-                    Cadastre-se
+                Já tem uma conta?{' '}
+                <Link href="/login" className="underline underline-offset-4 hover:text-primary">
+                    Faça login
                 </Link>
              </p>
           </CardFooter>

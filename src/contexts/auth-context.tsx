@@ -18,6 +18,7 @@ import {
   reauthenticateWithPopup,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
+  sendPasswordResetEmail
 } from 'firebase/auth';
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { auth, isFirebaseConfigured } from '@/lib/firebase';
@@ -26,6 +27,9 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   signInWithGoogle: () => void;
+  signInWithEmail: (email: string, password: string) => Promise<any>;
+  signUpWithEmail: (name: string, email: string, password: string) => Promise<any>;
+  sendPasswordReset: (email: string) => Promise<void>;
   logout: () => void;
   updateUserProfile?: (displayName: string, photo?: File | null) => Promise<void>;
   updateUserPassword?: (newPassword: string) => Promise<void>;
@@ -98,6 +102,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const signInWithEmail = async (email: string, password: string) => {
+    if (!isFirebaseConfigured) {
+      setUser(mockUser);
+      return;
+    }
+    setLoading(true);
+    return signInWithEmailAndPassword(auth, email, password);
+  }
+  
+  const signUpWithEmail = async (name: string, email: string, password: string) => {
+    if (!isFirebaseConfigured) {
+      setUser(mockUser);
+      return;
+    }
+    setLoading(true);
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    await updateProfile(userCredential.user, { displayName: name });
+    
+    // Create a new user object to force re-render with display name
+    const updatedUser: User = { ...userCredential.user, displayName: name, photoURL: null };
+    setUser(updatedUser);
+    
+    return userCredential;
+  }
+  
+  const sendPasswordReset = async (email: string) => {
+    if (!isFirebaseConfigured) {
+      alert("Password reset email sent to " + email);
+      return;
+    }
+    return sendPasswordResetEmail(auth, email);
+  }
+
   const logout = async () => {
      if (!isFirebaseConfigured) {
       setUser(null);
@@ -149,9 +186,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await updatePassword(currentUser, newPassword);
       } catch (error: any) {
         if (error.code === 'auth/requires-recent-login') {
-            const provider = new GoogleAuthProvider();
-            await reauthenticateWithPopup(currentUser, provider);
+          try {
+            // Re-authentication depends on the original provider
+            if (currentUser.providerData[0]?.providerId === 'google.com') {
+              const provider = new GoogleAuthProvider();
+              await reauthenticateWithPopup(currentUser, provider);
+            }
+            // For email/password, we can't easily re-auth without asking for the old password.
+            // Let's inform the user to log out and log back in.
+            else {
+               throw new Error("Por favor, saia e entre novamente para alterar sua senha.");
+            }
+            // Retry updating password after re-authentication
             await updatePassword(currentUser, newPassword);
+          } catch(reauthError: any) {
+             throw new Error(reauthError.message || "Sessão expirada. Por favor, faça login novamente para alterar sua senha.");
+          }
         } else {
            throw error;
         }
@@ -163,6 +213,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     user,
     loading,
     signInWithGoogle,
+    signInWithEmail,
+    signUpWithEmail,
+    sendPasswordReset,
     logout,
     updateUserProfile,
     updateUserPassword,
