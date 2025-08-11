@@ -12,7 +12,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 
 export default function SignupPage() {
-  const { user, signUpWithEmail, loading } = useAuth();
+  const { user, signUpWithEmail, signInWithGoogle, loading } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
 
@@ -97,7 +97,25 @@ export default function SignupPage() {
           </CardContent>
           <CardFooter className="flex flex-col gap-4">
             <Button type="submit" disabled={isLoading} className="w-full">
-              {isLoading ? <Loader2 className="animate-spin" /> : 'Cadastrar'}
+              {isLoading ? <Loader2 className="animate-spin" /> : 'Cadastrar com Email'}
+            </Button>
+            <div className="relative w-full">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">
+                  Ou
+                </span>
+              </div>
+            </div>
+            <Button
+              variant="outline"
+              onClick={signInWithGoogle}
+              disabled={isLoading}
+              className="w-full"
+            >
+              {isLoading ? <Loader2 className="animate-spin" /> : 'Cadastre-se com Google'}
             </Button>
              <p className="text-center text-sm text-muted-foreground">
                 Já tem uma conta?{' '}
