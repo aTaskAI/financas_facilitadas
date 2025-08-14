@@ -149,7 +149,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const updateUserProfile = async (displayName: string, photo?: File | null) => {
-    if (!auth.currentUser) throw new Error("Usuário não autenticado.");
+    const currentUser = auth.currentUser;
+    if (!currentUser) throw new Error("Usuário não autenticado.");
+    
     if (!isFirebaseConfigured) {
         const updatedUser = {...user, displayName: displayName} as User;
         if(photo) {
@@ -159,7 +161,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
     }
 
-    const currentUser = auth.currentUser;
     let photoURL = currentUser.photoURL;
     if (photo) {
       const storage = getStorage();
@@ -167,12 +168,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await uploadBytes(storageRef, photo);
       photoURL = await getDownloadURL(storageRef);
     }
-
+    
+    // Update the profile in Firebase first
     await updateProfile(currentUser, { displayName, photoURL });
     
-    // Create a new user object to force re-render
-    const updatedUser: User = { ...currentUser, displayName, photoURL };
-    setUser(updatedUser);
+    // THEN, update the local state with the new, confirmed data.
+    // We create a new object to ensure React detects the state change.
+    setUser(prevUser => {
+        if (!prevUser) return null;
+        return {
+            ...prevUser,
+            displayName: displayName,
+            photoURL: photoURL
+        };
+    });
   };
   
   const updateUserPassword = async (newPassword: string) => {
